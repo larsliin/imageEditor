@@ -1,104 +1,104 @@
 <script setup lang="ts">
-import { computed, nextTick, shallowRef, useTemplateRef } from 'vue'
-import type { ImageInfo } from '@/types/editor'
+    import { computed, nextTick, shallowRef, useTemplateRef } from 'vue';
+    import type { ImageInfo } from '@/types/editor';
 
-const props = defineProps<{
-  image: ImageInfo | null
-  busy: boolean
-}>()
+    const props = defineProps<{
+        image: ImageInfo | null
+        busy: boolean
+    }>();
 
-const emit = defineEmits<{
-  rename: [fileName: string]
-}>()
+    const emit = defineEmits<{
+        rename: [fileName: string]
+    }>();
 
-const isEditing = shallowRef(false)
-const draftName = shallowRef('')
-const filenameInput = useTemplateRef<HTMLInputElement>('filenameInput')
-const renameButton = useTemplateRef<HTMLButtonElement>('renameButton')
+    const isEditing = shallowRef(false);
+    const draftName = shallowRef('');
+    const filenameInput = useTemplateRef<HTMLInputElement>('filenameInput');
+    const renameButton = useTemplateRef<HTMLButtonElement>('renameButton');
 
-const PLACEHOLDER = '—'
+    const PLACEHOLDER = '—';
 
-const fileName = computed(() => props.image?.fileName ?? 'No image')
-const displayedName = computed({
-  get: () => isEditing.value ? draftName.value : fileName.value,
-  set: (value: string) => { draftName.value = value },
-})
-const width = computed(() => (props.image ? `${props.image.width} px` : PLACEHOLDER))
-const height = computed(() => (props.image ? `${props.image.height} px` : PLACEHOLDER))
+    const fileName = computed(() => props.image?.fileName ?? 'No image');
+    const displayedName = computed({
+        get: () => isEditing.value ? draftName.value : fileName.value,
+        set: (value: string) => { draftName.value = value; },
+    });
+    const width = computed(() => (props.image ? `${props.image.width} px` : PLACEHOLDER));
+    const height = computed(() => (props.image ? `${props.image.height} px` : PLACEHOLDER));
 
-async function startRenaming() {
-  if (!props.image || props.busy) return
-  draftName.value = props.image.fileName
-  isEditing.value = true
-  await nextTick()
-  filenameInput.value?.focus()
-  const dot = draftName.value.lastIndexOf('.')
-  filenameInput.value?.setSelectionRange(0, dot > 0 ? dot : draftName.value.length)
-}
+    async function startRenaming() {
+        if (!props.image || props.busy) return;
+        draftName.value = props.image.fileName;
+        isEditing.value = true;
+        await nextTick();
+        filenameInput.value?.focus();
+        const dot = draftName.value.lastIndexOf('.');
+        filenameInput.value?.setSelectionRange(0, dot > 0 ? dot : draftName.value.length);
+    }
 
-async function finishRenaming(cancel = false, restoreFocus = false) {
-  if (!isEditing.value) return
-  if (!cancel) {
-    const input = filenameInput.value
-    input?.setCustomValidity(draftName.value.trim() ? '' : 'Enter a filename.')
-    if (input && !input.reportValidity()) return
-    emit('rename', draftName.value.trim())
-  }
-  isEditing.value = false
-  if (restoreFocus) {
-    await nextTick()
-    renameButton.value?.focus()
-  }
-}
+    async function finishRenaming(cancel = false, restoreFocus = false) {
+        if (!isEditing.value) return;
+        if (!cancel) {
+            const input = filenameInput.value;
+            input?.setCustomValidity(draftName.value.trim() ? '' : 'Enter a filename.');
+            if (input && !input.reportValidity()) return;
+            emit('rename', draftName.value.trim());
+        }
+        isEditing.value = false;
+        if (restoreFocus) {
+            await nextTick();
+            renameButton.value?.focus();
+        }
+    }
 </script>
 
 <template>
-  <header class="info-bar">
-    <dl class="info-list">
-      <div class="info-item info-item--file">
-        <dt><i class="bi bi-file-earmark-image" aria-hidden="true"></i><span>File</span></dt>
-        <dd class="filename">
-          <input
-            ref="filenameInput"
-            v-model="displayedName"
-            class="filename-input"
-            type="text"
-            aria-label="Filename"
-            required
-            :readonly="!isEditing"
-            :tabindex="isEditing ? 0 : -1"
-            :title="fileName"
-            :disabled="busy"
-            @input="filenameInput?.setCustomValidity('')"
-            @blur="finishRenaming()"
-            @keydown.enter.prevent="finishRenaming(false, true)"
-            @keydown.esc.prevent="finishRenaming(true, true)"
-          />
-          <button
-              v-if="image"
-              ref="renameButton"
-              type="button"
-              class="rename-button"
-              aria-label="Rename file"
-              title="Rename file"
-              :disabled="busy || isEditing"
-              @click="startRenaming"
-            >
-              <i class="bi bi-pencil" aria-hidden="true"></i>
-          </button>
-        </dd>
-      </div>
-      <div class="info-item">
-        <dt><span>Width</span></dt>
-        <dd>{{ width }}</dd>
-      </div>
-      <div class="info-item">
-        <dt><span>Height</span></dt>
-        <dd>{{ height }}</dd>
-      </div>
-    </dl>
-    <div id="editor-tool-controls" class="tool-controls"></div>
-  </header>
+    <header class="info-bar">
+        <dl class="info-list">
+            <div class="info-item info-item--file">
+                <dt><i class="bi bi-file-earmark-image" aria-hidden="true"></i><span>File</span></dt>
+                <dd class="filename">
+                    <input
+                        ref="filenameInput"
+                        v-model="displayedName"
+                        class="filename-input"
+                        type="text"
+                        aria-label="Filename"
+                        required
+                        :readonly="!isEditing"
+                        :tabindex="isEditing ? 0 : -1"
+                        :title="fileName"
+                        :disabled="busy"
+                        @input="filenameInput?.setCustomValidity('')"
+                        @blur="finishRenaming()"
+                        @keydown.enter.prevent="finishRenaming(false, true)"
+                        @keydown.esc.prevent="finishRenaming(true, true)"
+                    />
+                    <button
+                        v-if="image"
+                        ref="renameButton"
+                        type="button"
+                        class="rename-button"
+                        aria-label="Rename file"
+                        title="Rename file"
+                        :disabled="busy || isEditing"
+                        @click="startRenaming"
+                    >
+                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                    </button>
+                </dd>
+            </div>
+            <div class="info-item">
+                <dt><span>Width</span></dt>
+                <dd>{{ width }}</dd>
+            </div>
+            <div class="info-item">
+                <dt><span>Height</span></dt>
+                <dd>{{ height }}</dd>
+            </div>
+        </dl>
+        <div id="editor-tool-controls" class="tool-controls"></div>
+    </header>
 </template>
 
 <style scoped>

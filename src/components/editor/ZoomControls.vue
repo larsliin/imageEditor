@@ -1,50 +1,50 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { formatZoom } from '@/lib/zoom'
+    import { computed } from 'vue';
+    import { formatZoom } from '@/lib/zoom';
 
-const props = defineProps<{
-  zoom: number
-  isFit: boolean
-}>()
+    const props = defineProps<{
+        zoom: number
+        isFit: boolean
+    }>();
 
-const emit = defineEmits<{
-  fit: []
-  'actual-size': []
-}>()
+    const emit = defineEmits<{
+        fit: []
+        'actual-size': []
+    }>();
 
-const label = computed(() => formatZoom(props.zoom))
-const isActualSize = computed(() => props.zoom === 1)
+    const label = computed(() => formatZoom(props.zoom));
+    const isActualSize = computed(() => props.zoom === 1);
 </script>
 
 <template>
-  <div class="zoom-controls" role="group" aria-label="Zoom">
-    <output class="zoom-level" aria-live="polite" :aria-label="`Zoom ${label}`">
-      <i class="bi bi-search" aria-hidden="true"></i>
-      <span>{{ label }}</span>
-    </output>
-    <button
-      type="button"
-      class="zoom-button"
-      aria-label="Fit to window"
-      title="Fit to window"
-      :aria-pressed="isFit"
-      :disabled="isFit"
-      @click="emit('fit')"
-    >
-      <i class="bi bi-arrows-angle-contract" aria-hidden="true"></i>
-    </button>
-    <button
-      type="button"
-      class="zoom-button"
-      aria-label="Actual size (100%)"
-      title="Actual size (100%)"
-      :aria-pressed="isActualSize"
-      :disabled="isActualSize"
-      @click="emit('actual-size')"
-    >
-      <i class="bi bi-1-square" aria-hidden="true"></i>
-    </button>
-  </div>
+    <div class="zoom-controls" role="group" aria-label="Zoom">
+        <output class="zoom-level" aria-live="polite" :aria-label="`Zoom ${label}`">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <span>{{ label }}</span>
+        </output>
+        <button
+            type="button"
+            class="zoom-button"
+            aria-label="Fit to window"
+            title="Fit to window"
+            :aria-pressed="isFit"
+            :disabled="isFit"
+            @click="emit('fit')"
+        >
+            <i class="bi bi-arrows-angle-contract" aria-hidden="true"></i>
+        </button>
+        <button
+            type="button"
+            class="zoom-button"
+            aria-label="Actual size (100%)"
+            title="Actual size (100%)"
+            :aria-pressed="isActualSize"
+            :disabled="isActualSize"
+            @click="emit('actual-size')"
+        >
+            <i class="bi bi-1-square" aria-hidden="true"></i>
+        </button>
+    </div>
 </template>
 
 <style scoped>
