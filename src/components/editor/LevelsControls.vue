@@ -30,6 +30,7 @@
     }>();
 
     const levels = ref<LevelsParams>({ ...DEFAULT_LEVELS });
+    const showPreview = ref(true);
     const histogramCanvas = useTemplateRef<HTMLCanvasElement>('histogram');
     const track = useTemplateRef<HTMLDivElement>('track');
     const idPrefix = useId();
@@ -72,8 +73,8 @@
     });
 
     watch(
-        levels,
-        (value) => emit('preview', isValidLevels(value) && !isIdentityLevels(value) ? { ...value } : null),
+        [levels, showPreview],
+        ([value, enabled]) => emit('preview', enabled && isValidLevels(value) && !isIdentityLevels(value) ? { ...value } : null),
         { deep: true },
     );
 
@@ -234,7 +235,13 @@
             <p v-if="!valid" class="validation-message" role="alert">
                 Shadows must be below highlights (0–255), and midtones between {{ MIN_GAMMA }} and {{ MAX_GAMMA }}.
             </p>
-            <button type="button" class="reset-button" :disabled="unchanged" @click="reset">Reset</button>
+            <div class="footer-row">
+                <button type="button" class="reset-button" :disabled="unchanged" @click="reset">Reset</button>
+                <label class="preview-toggle">
+                    <input v-model="showPreview" type="checkbox" />
+                    Preview
+                </label>
+            </div>
         </div>
     </ToolModal>
 </template>
@@ -343,6 +350,25 @@
 .reset-button:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: -2px;
+}
+
+.footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.preview-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.preview-toggle input:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .reset-button {

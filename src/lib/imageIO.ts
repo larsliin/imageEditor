@@ -1,4 +1,5 @@
 import { applyLevelsToPixels, type LevelsParams } from './levels';
+import { applyCurvesToPixels, type CurvesParams } from './curves';
 
 export type ExportMimeType = 'image/png' | 'image/jpeg' | 'image/webp';
 
@@ -90,6 +91,18 @@ export async function levelsImageBitmap(source: ImageBitmap, levels: LevelsParam
     }
     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
     applyLevelsToPixels(imageData.data, levels);
+    context.putImageData(imageData, 0, 0);
+    return createImageBitmap(canvas);
+}
+
+export async function curvesImageBitmap(source: ImageBitmap, curves: CurvesParams): Promise<ImageBitmap> {
+    const canvas = renderToCanvas(source);
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('Canvas 2D rendering is not available in this browser.');
+    }
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    applyCurvesToPixels(imageData.data, curves);
     context.putImageData(imageData, 0, 0);
     return createImageBitmap(canvas);
 }

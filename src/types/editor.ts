@@ -15,7 +15,7 @@ export interface ImageInfo {
 export const EDIT_TOOLS: readonly ToolDefinition[] = [
     { id: 'crop', label: 'Crop', icon: 'bi-crop' },
     { id: 'resize', label: 'Resize', icon: 'bi-arrows-angle-expand' },
-    { id: 'levels', label: 'Levels', icon: 'bi-bar-chart-line' },
+    { id: 'levels', label: 'Levels', icon: 'bi-shadows' },
     { id: 'curves', label: 'Curves', icon: 'bi-bezier' },
 ];
 

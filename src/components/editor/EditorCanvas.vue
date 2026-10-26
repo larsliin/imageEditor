@@ -1,10 +1,11 @@
 <script setup lang="ts">
-    import { computed, onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue';
+    import { computed, nextTick, onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue';
     import { displaySize, type Size } from '@/lib/zoom';
     import { usePan } from '@/composables/usePan';
     import CropOverlay from './CropOverlay.vue';
     import type { CropRect } from '@/lib/crop';
     import { applyLevelsToPixels, type LevelsParams } from '@/lib/levels';
+    import { applyCurvesToPixels, type CurvesParams } from '@/lib/curves';
 
     const props = defineProps<{
         bitmap: ImageBitmap | null
@@ -15,6 +16,7 @@
         loading: boolean
         error: string | null
         levelsPreview?: LevelsParams | null
+        curvesPreview?: CurvesParams | null
     }>();
 
     const emit = defineEmits<{
@@ -23,9 +25,12 @@
         'viewport-resize': [size: Size]
         crop: [crop: CropRect]
         'cancel-crop': []
+        'zoom-in': []
+        'zoom-out': []
     }>();
 
     const viewportRef = useTemplateRef<HTMLDivElement>('viewport');
+    const imageSurfaceRef = useTemplateRef<HTMLDivElement>('image-surface');
     const canvasRef = useTemplateRef<HTMLCanvasElement>('canvas');
 
     const { isPanMode, isDragging } = usePan(viewportRef, {
@@ -38,6 +43,31 @@
         const size = displaySize(props.bitmap, props.zoom);
         return { width: `${size.width}px`, height: `${size.height}px` };
     });
+
+    function handleWheel(event: WheelEvent) {
+        if (!event.ctrlKey) return;
+
+        event.preventDefault();
+        if (event.deltaY === 0) return;
+
+        const surface = imageSurfaceRef.value;
+        const bounds = surface?.getBoundingClientRect();
+        if (bounds && bounds.width > 0 && bounds.height > 0) {
+            pointerAnchor = {
+                clientX: event.clientX,
+                clientY: event.clientY,
+                imageX: (event.clientX - bounds.left) / bounds.width,
+                imageY: (event.clientY - bounds.top) / bounds.height,
+            };
+        }
+
+        const previousZoom = props.zoom;
+        if (event.deltaY < 0) emit('zoom-in');
+        else emit('zoom-out');
+        void nextTick(() => {
+            if (props.zoom === previousZoom) pointerAnchor = null;
+        });
+    }
 
     let resizeObserver: ResizeObserver | null = null;
 
@@ -54,10 +84,15 @@
 
     // Keep the point at the viewport center stable when zooming.
     let centerRatio: { x: number; y: number } | null = null;
+    let pointerAnchor: { clientX: number; clientY: number; imageX: number; imageY: number } | null = null;
 
     watch(
         () => props.zoom,
         () => {
+            if (pointerAnchor) {
+                centerRatio = null;
+                return;
+            }
             const viewport = viewportRef.value;
             if (!viewport || viewport.scrollWidth === 0 || viewport.scrollHeight === 0) return;
             centerRatio = {
@@ -72,7 +107,17 @@
         () => props.zoom,
         () => {
             const viewport = viewportRef.value;
-            if (!viewport || !centerRatio) return;
+            if (!viewport) return;
+            if (pointerAnchor) {
+                const surfaceBounds = imageSurfaceRef.value?.getBoundingClientRect();
+                if (surfaceBounds) {
+                    viewport.scrollLeft += surfaceBounds.left + pointerAnchor.imageX * surfaceBounds.width - pointerAnchor.clientX;
+                    viewport.scrollTop += surfaceBounds.top + pointerAnchor.imageY * surfaceBounds.height - pointerAnchor.clientY;
+                }
+                pointerAnchor = null;
+                return;
+            }
+            if (!centerRatio) return;
             viewport.scrollLeft = centerRatio.x * viewport.scrollWidth - viewport.clientWidth / 2;
             viewport.scrollTop = centerRatio.y * viewport.scrollHeight - viewport.clientHeight / 2;
             centerRatio = null;
@@ -81,8 +126,8 @@
     );
 
     watch(
-        [() => props.bitmap, canvasRef, () => props.levelsPreview],
-        ([bitmap, canvas, levels]) => {
+        [() => props.bitmap, canvasRef, () => props.levelsPreview, () => props.curvesPreview],
+        ([bitmap, canvas, levels, curves]) => {
             if (!bitmap || !canvas) return;
             if (canvas.width !== bitmap.width || canvas.height !== bitmap.height) {
                 canvas.width = bitmap.width;
@@ -92,9 +137,10 @@
             if (!context) return;
             context.clearRect(0, 0, canvas.width, canvas.height);
             context.drawImage(bitmap, 0, 0);
-            if (!levels) return;
+            if (!levels && !curves) return;
             const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            applyLevelsToPixels(imageData.data, levels);
+            if (levels) applyLevelsToPixels(imageData.data, levels);
+            if (curves) applyCurvesToPixels(imageData.data, curves);
             context.putImageData(imageData, 0, 0);
         },
         { flush: 'post' },
@@ -117,6 +163,7 @@
             :class="{ 'is-pan-mode': isPanMode, 'is-dragging': isDragging }"
             :tabindex="bitmap ? 0 : undefined"
             :aria-label="bitmap ? 'Image viewport, use arrow keys to pan' : undefined"
+            @wheel="handleWheel"
         >
             <p v-if="loading" class="status-message" role="status">
                 <i class="bi bi-hourglass-split" aria-hidden="true"></i>
@@ -124,6 +171,7 @@
             </p>
             <div
                 v-else-if="bitmap"
+                ref="image-surface"
                 class="image-surface"
                 :style="previewStyle"
             >

@@ -12,8 +12,13 @@
     import type { CropRect } from './lib/crop';
     import LevelsControls from './components/editor/LevelsControls.vue';
     import type { LevelsParams } from './lib/levels';
+    import CurvesControls from './components/editor/CurvesControls.vue';
+    import type { CurvesParams } from './lib/curves';
 
-    const { bitmap, info, documentId, status, error, isBusy, importImage, exportImage, cropImage, rotateImage, resizeImage, levelsImage, renameImage, dismissError }
+    const {
+        bitmap, info, documentId, status, error, isBusy, importImage, exportImage, cropImage, rotateImage,
+        resizeImage, levelsImage, curvesImage, renameImage, dismissError,
+    }
         = useImageDocument();
 
     const viewportSize = ref<Size>({ width: 0, height: 0 });
@@ -46,9 +51,15 @@
     }
 
     const levelsPreview = ref<LevelsParams | null>(null);
+    const curvesPreview = ref<CurvesParams | null>(null);
+
+    async function applyCurves(curves: CurvesParams) {
+        if (await curvesImage(curves)) activeTool.value = null;
+    }
 
     watch(activeTool, () => {
         levelsPreview.value = null;
+        curvesPreview.value = null;
     });
 
     watch(bitmap, () => {
@@ -84,9 +95,12 @@
             :loading="status === 'loading'"
             :error="error"
             :levels-preview="levelsPreview"
+            :curves-preview="curvesPreview"
             @import="importImage"
             @dismiss-error="dismissError"
             @viewport-resize="viewportSize = $event"
+            @zoom-in="zoomIn"
+            @zoom-out="zoomOut"
             @crop="applyCrop"
             @cancel-crop="activeTool = null"
         >
@@ -109,6 +123,15 @@
             :error="error"
             @preview="levelsPreview = $event"
             @apply="applyLevels"
+            @cancel="activeTool = null"
+        />
+        <CurvesControls
+            v-if="activeTool === 'curves' && bitmap"
+            :image="bitmap"
+            :disabled="isBusy"
+            :error="error"
+            @preview="curvesPreview = $event"
+            @apply="applyCurves"
             @cancel="activeTool = null"
         />
     </div>

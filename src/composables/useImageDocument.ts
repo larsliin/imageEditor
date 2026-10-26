@@ -3,6 +3,7 @@ import type { ImageInfo } from '@/types/editor';
 import { isValidCrop, type CropRect } from '@/lib/crop';
 import { MAX_RESIZE_DIMENSION, isValidResize } from '@/lib/resize';
 import { isIdentityLevels, isValidLevels, type LevelsParams } from '@/lib/levels';
+import { isIdentityCurves, isValidCurves, type CurvesParams } from '@/lib/curves';
 import type { Size } from '@/lib/zoom';
 import {
     canvasToBlob,
@@ -13,6 +14,7 @@ import {
     renderToCanvas,
     resizeImageBitmap,
     levelsImageBitmap,
+    curvesImageBitmap,
     resolveExportMimeType,
     rotateImageBitmap,
 } from '@/lib/imageIO';
@@ -201,6 +203,34 @@ export function useImageDocument() {
         }
     }
 
+    async function curvesImage(curves: CurvesParams): Promise<boolean> {
+        const doc = current.value;
+        if (!doc || isBusy.value) return false;
+        if (!isValidCurves(curves)) {
+            error.value = 'The curve points are invalid.';
+            return false;
+        }
+        if (isIdentityCurves(curves)) return true;
+        status.value = 'processing';
+        error.value = null;
+        try {
+            const adjusted = await curvesImageBitmap(doc.bitmap, curves);
+            if (disposed) {
+                adjusted.close();
+                return false;
+            }
+            if (doc.bitmap !== doc.original) doc.bitmap.close();
+            current.value = { ...doc, bitmap: adjusted };
+            revision.value = ++nextRevision;
+            return true;
+        } catch (e) {
+            error.value = errorMessage(e, 'The curves could not be applied.');
+            return false;
+        } finally {
+            status.value = 'idle';
+        }
+    }
+
     function resetImage() {
         const doc = current.value;
         if (!doc || !canReset.value || isBusy.value) return;
@@ -274,6 +304,7 @@ export function useImageDocument() {
         rotateImage,
         resizeImage,
         levelsImage,
+        curvesImage,
         resetImage,
         renameImage,
         exportImage,
