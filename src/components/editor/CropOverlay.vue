@@ -240,6 +240,7 @@
                         :max="image.width - crop.x" required step="1" @blur="zeroIfEmpty($event, 'width')" /></label>
                     <label>Height <input v-model.number="crop.height" aria-label="Crop height" type="number" min="1"
                         :max="image.height - crop.y" required step="1" @blur="zeroIfEmpty($event, 'height')" /></label>
+                    <span class="crop-divider" role="separator" aria-orientation="vertical"></span>
                     <label class="crop-angle-slider">Straighten
                         <input v-model.number="angle" class="crop-angle-range" aria-label="Straighten angle slider" type="range"
                             :min="-MAX_STRAIGHTEN_ANGLE" :max="MAX_STRAIGHTEN_ANGLE" step="0.1" />
@@ -335,8 +336,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 4px 0;
-  white-space: nowrap;
 }
 
 .crop-error {
@@ -368,10 +371,14 @@ fieldset {
   gap: 8px;
 }
 
+.crop-divider {
+  height: 24px;
+  border-left: 1px solid var(--color-border);
+}
+
 .crop-actions {
   display: flex;
   gap: 8px;
-  margin-left: auto;
 }
 
 label {
@@ -393,8 +400,42 @@ button {
 }
 
 input[type='range'] {
+  appearance: none;
   width: 140px;
   padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.crop-angle-range::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--color-border);
+  border-radius: 2px;
+}
+
+.crop-angle-range::-moz-range-track,
+.crop-angle-range::-moz-range-progress {
+  height: 4px;
+  background: var(--color-border);
+  border-radius: 2px;
+}
+
+.crop-angle-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  background: var(--color-text);
+  border: 0;
+  border-radius: 50%;
+}
+
+.crop-angle-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--color-text);
+  border: 0;
+  border-radius: 50%;
 }
 
 input[type='number'] {
@@ -454,7 +495,11 @@ button:disabled {
   opacity: var(--opacity-button-secondary-disabled);
 }
 
-input:focus-visible,
+input:focus-visible {
+  outline: 1px solid var(--color-focus);
+  outline-offset: 0;
+}
+
 button:focus-visible,
 .crop-surface:focus-visible {
   outline: 2px solid var(--color-focus);

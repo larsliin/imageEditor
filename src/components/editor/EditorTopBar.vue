@@ -98,7 +98,6 @@
                 </dd>
             </div>
         </dl>
-        <div id="editor-tool-controls" class="tool-controls"></div>
     </header>
 </template>
 
@@ -107,26 +106,11 @@
   display: flex;
   align-items: center;
   gap: 8px 16px;
-  height: 52px;
+  height: 48px;
   overflow-x: auto;
   padding: 0 12px;
   background-color: var(--color-panel);
   border-bottom: 1px solid var(--color-border);
-}
-
-.tool-controls {
-  display: flex;
-  flex: 1 0 auto;
-  padding-left: 24px;
-  border-left: 1px solid var(--color-border);
-}
-
-.tool-controls > :deep(*) {
-  flex: 1;
-}
-
-.tool-controls:empty {
-  display: none;
 }
 
 .document-details {
@@ -165,7 +149,7 @@
 .filename-controls {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 0;
   flex: 0 0 auto;
 }
 
@@ -175,7 +159,7 @@
   min-width: 1.5rem;
   max-width: min(18rem, 40vw);
   height: 30px;
-  padding: 4px;
+  padding: 4px 0 4px 4px;
   border: 1px solid var(--color-border);
   border-radius: 3px;
   font: inherit;
@@ -202,7 +186,7 @@
 .export-format {
   min-width: 4.25rem;
   height: 30px;
-  padding: 4px 8px;
+  padding: 4px 8px 4px 2px;
   border: 1px solid var(--color-border);
   border-radius: 3px;
   font: inherit;
@@ -219,32 +203,13 @@
 
 .filename-input:focus-visible,
 .export-format:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 1px;
-}
-
-.filename-input:focus-visible {
+  outline: 1px solid var(--color-focus);
   outline-offset: 0;
 }
 
 .filename-extension-separator {
+  margin: 0 2px;
   color: var(--color-text-muted);
-}
-
-@media (max-width: 1400px) {
-  .tool-controls {
-    position: fixed;
-    top: 64px;
-    right: 12px;
-    left: 61px;
-    z-index: 20;
-    flex: none;
-    padding: 10px 12px;
-    border: 1px solid var(--color-border);
-    border-radius: 6px;
-    background-color: var(--color-panel);
-    box-shadow: 0 4px 16px rgb(0 0 0 / 40%);
-  }
 }
 
 @media (max-width: 640px) {

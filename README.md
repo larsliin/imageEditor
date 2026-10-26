@@ -24,9 +24,14 @@ reliable image-preview, import, and export workflow.
   views. Fit-to-window scales smaller images up and larger images down to the
   available preview area, within the 1%-3200% zoom range. Actual size shows the
   image at 100%. Hold Space to pan while using the crop tool.
-- **Resize** opens a modal with width and height in pixels. Aspect ratio is
-  locked by default; unlock it to set dimensions independently. Each side must
-  be a whole number between 1 and 16384 pixels. **Apply resize** or Enter applies
+- **Resize** opens a modal with synchronized width and height fields in both
+  pixels and percentages, visible together. Editing either unit updates the other.
+  The aspect-ratio lock is centered between both rows and is locked by default;
+  unlock it to set dimensions independently in either unit. Percentages are relative
+  to the image size when the dialog opens (100%) and support fractional values.
+  Results are rounded to the
+  nearest whole pixel, with a minimum of 1 pixel. Each side must be between 1
+  and 16384 pixels. **Apply resize** or Enter applies
   the change; **Cancel** or Escape discards it. Processing failures are shown
   inside the modal without discarding the entered dimensions.
 - **Download the edited image** at its full pixel resolution. PNG, JPEG, and WebP
@@ -48,6 +53,8 @@ Tool dialogs share `src/components/editor/ToolModal.vue`: provide a title,
 apply label, validity, busy/error state, and tool-specific fields through its
 default slot. It emits `apply` and `cancel` and handles modal focus, keyboard
 navigation, and shared actions. Mount it conditionally while the tool is open.
+All tool dialogs use the same panel styling and a transparent backdrop so the
+image preview is never dimmed while a dialog is open.
 
 ## Development
 

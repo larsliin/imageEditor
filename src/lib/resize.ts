@@ -9,6 +9,23 @@ export function isValidResize(size: Size): boolean {
     );
 }
 
+export function dimensionForPercentage(source: number, percentage: number): number | null {
+    if (!Number.isFinite(percentage) || percentage <= 0) return null;
+    const dimension = Math.max(1, Math.round(source * percentage / 100));
+    return Number.isSafeInteger(dimension) && dimension <= MAX_RESIZE_DIMENSION ? dimension : null;
+}
+
+export function sizeForPercentage(source: Size, percentage: number): Size | null {
+    const width = dimensionForPercentage(source.width, percentage);
+    const height = dimensionForPercentage(source.height, percentage);
+    if (width === null || height === null) return null;
+    const size = {
+        width,
+        height,
+    };
+    return isValidResize(size) ? size : null;
+}
+
 function scaleDimension(value: number, from: number, to: number): number {
     return Math.max(1, Math.round(value * to / from));
 }

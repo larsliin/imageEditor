@@ -199,7 +199,6 @@
     <ToolModal
         title="Curves"
         apply-label="Apply curves"
-        :dim="false"
         :can-apply="valid && !unchanged"
         :busy="disabled"
         :error="error"
@@ -413,6 +412,11 @@
 }
 
 .field__input:focus-visible,
+.preview-toggle input:focus-visible {
+  outline: 1px solid var(--color-focus);
+  outline-offset: 0;
+}
+
 .reset-button:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: -2px;
@@ -424,11 +428,6 @@
   align-self: flex-start;
   gap: 6px;
   cursor: pointer;
-}
-
-.preview-toggle input:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
 }
 
 .reset-button {
