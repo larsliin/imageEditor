@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { computed, onMounted, ref, shallowRef, useId, useTemplateRef, watch } from 'vue';
+    import { computed, nextTick, onMounted, ref, shallowRef, useId, useTemplateRef, watch } from 'vue';
     import {
         CURVES_CHANNELS,
         CURVE_MAX,
@@ -109,12 +109,10 @@
         return { x: Math.round(x), y: Math.round(y) };
     }
 
-    function onPointerDown(event: PointerEvent) {
-        if (props.disabled || dragPointerId !== null || !graph.value) return;
-        const target = pointerToCurve(event);
-        if (!target) return;
-        const rect = graph.value.getBoundingClientRect();
-        const unitsPerPixel = VIEW / rect.width;
+    function hitTest(event: MouseEvent): { target: { x: number, y: number }, index: number } | null {
+        const rect = graph.value?.getBoundingClientRect();
+        const target = pointerToCurve(event as PointerEvent);
+        if (!rect || !target) return null;
         let nearest = -1;
         let nearestDistance = Infinity;
         points.value.forEach((p, i) => {
@@ -124,10 +122,25 @@
                 nearestDistance = distance;
             }
         });
-        dragIndex = nearestDistance <= HIT_RADIUS * unitsPerPixel
-            ? nearest
+        return { target, index: nearestDistance <= HIT_RADIUS * (VIEW / rect.width) ? nearest : -1 };
+    }
+
+    // Pointer capture retargets dblclick to the SVG, so hit-test here instead of on the circles.
+    function onDoubleClick(event: MouseEvent) {
+        const hit = hitTest(event);
+        if (hit && hit.index >= 0) remove(hit.index);
+    }
+
+    function onPointerDown(event: PointerEvent) {
+        if (props.disabled || dragPointerId !== null || !graph.value) return;
+        const hit = hitTest(event);
+        if (!hit) return;
+        const { target } = hit;
+        dragIndex = hit.index >= 0
+            ? hit.index
             : insertPoint(points.value, target.x, target.y);
         selected.value = dragIndex;
+        focusPoint(dragIndex);
         dragPointerId = event.pointerId;
         graph.value.setPointerCapture(event.pointerId);
     }
@@ -148,7 +161,19 @@
 
     function remove(index: number) {
         if (props.disabled) return;
-        if (removePoint(points.value, index)) selected.value = Math.min(index, points.value.length - 1);
+        if (removePoint(points.value, index)) {
+            selected.value = Math.min(index, points.value.length - 1);
+            focusPoint(selected.value);
+        }
+    }
+
+    // preventDefault on pointerdown plus pointer capture stops the browser from focusing the point,
+    // so keyboard actions (Delete, arrows) need focus moved explicitly.
+    function focusPoint(index: number) {
+        void nextTick(() => {
+            const circles = graph.value?.querySelectorAll<SVGElement>('.graph__point');
+            circles?.[index]?.focus();
+        });
     }
 
     function onKeyDown(index: number, event: KeyboardEvent) {
@@ -226,6 +251,7 @@
                 @pointerdown.prevent="onPointerDown"
                 @pointermove="onPointerMove"
                 @pointerup="onPointerUp"
+                @dblclick="onDoubleClick"
                 @pointercancel="onPointerUp"
                 @lostpointercapture="onPointerUp"
             >
@@ -256,7 +282,6 @@
                     aria-valuemax="255"
                     @focus="selected = index"
                     @keydown="onKeyDown(index, $event)"
-                    @dblclick.stop="remove(index)"
                 />
             </svg>
             <p v-if="histogramError" class="hint">Histogram unavailable.</p>

@@ -184,16 +184,23 @@
 }
 
 .export-format {
-  min-width: 4.25rem;
-  height: 30px;
-  padding: 4px 8px 4px 2px;
+  width: 50px;
+  min-width: 0;
+  height: 24px;
+  margin-left: 2px;
+  padding: 2px 0;
   border: 1px solid var(--color-border);
   border-radius: 3px;
   font: inherit;
   font-size: 12px;
   color: var(--color-text-muted);
-  background-color: var(--color-bg);
+  background-color: var(--color-panel-raised);
   cursor: pointer;
+}
+
+.export-format:hover:not(:disabled) {
+  color: var(--color-text);
+  background-color: var(--color-hover);
 }
 
 .export-format:disabled {
@@ -208,7 +215,7 @@
 }
 
 .filename-extension-separator {
-  margin: 0 2px;
+  margin: 0 1px;
   color: var(--color-text-muted);
 }
 
