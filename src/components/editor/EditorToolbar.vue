@@ -71,6 +71,7 @@
                 >
                     <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                 </button>
+                <hr v-if="tool.id === 'resize'" class="separator" />
             </template>
         </div>
 
@@ -132,6 +133,7 @@
 }
 
 .separator {
+  align-self: center;
   width: 28px;
   border: none;
   border-top: 1px solid var(--color-border);
