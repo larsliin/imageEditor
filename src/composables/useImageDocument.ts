@@ -32,6 +32,7 @@ export function useImageDocument() {
     const current = shallowRef<LoadedDocument | null>(null);
     const status = ref<DocumentStatus>('idle');
     const error = ref<string | null>(null);
+    const documentId = ref(0);
     const revision = shallowRef(0);
     const savedRevision = shallowRef(0);
     const savedFileName = shallowRef('');
@@ -77,6 +78,7 @@ export function useImageDocument() {
                 return;
             }
             replaceDocument({ original: decoded, bitmap: decoded, fileName: file.name, mimeType: file.type });
+            documentId.value += 1;
             revision.value = 0;
             savedRevision.value = 0;
             savedFileName.value = file.name;
@@ -231,6 +233,7 @@ export function useImageDocument() {
     return {
         bitmap,
         info,
+        documentId: readonly(documentId),
         status: readonly(status),
         error: readonly(error),
         isBusy,

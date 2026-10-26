@@ -11,7 +11,7 @@
     import type { ToolId } from './types/editor';
     import type { CropRect } from './lib/crop';
 
-    const { bitmap, info, status, error, isBusy, importImage, exportImage, cropImage, rotateImage, resizeImage, renameImage, dismissError }
+    const { bitmap, info, documentId, status, error, isBusy, importImage, exportImage, cropImage, rotateImage, resizeImage, renameImage, dismissError }
         = useImageDocument();
 
     const viewportSize = ref<Size>({ width: 0, height: 0 });
@@ -21,6 +21,7 @@
     const { zoom, isFit, canZoomIn, canZoomOut, zoomIn, zoomOut, fitToView, actualSize } = useZoom(
         imageSize,
         viewportSize,
+        documentId,
     );
 
     const activeTool = ref<ToolId | null>(null);
@@ -45,7 +46,7 @@
 
 <template>
     <div class="editor">
-        <EditorInfoBar class="editor__info" :image="info" :busy="isBusy" @rename="renameImage" />
+        <EditorInfoBar :key="documentId" class="editor__info" :image="info" :busy="isBusy" @rename="renameImage" />
         <EditorToolbar
             class="editor__toolbar"
             :active-tool="activeTool"
@@ -61,6 +62,7 @@
             @zoom-out="zoomOut"
         />
         <EditorCanvas
+            :key="documentId"
             class="editor__canvas"
             :bitmap="bitmap"
             :zoom="zoom"

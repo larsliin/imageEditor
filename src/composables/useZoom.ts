@@ -12,7 +12,11 @@ import {
  * Zoom state for the image preview. Starts in "fit" mode (follows viewport size)
  * and switches to a fixed zoom level once the user zooms in or out.
  */
-export function useZoom(imageSize: Ref<Size | null>, viewportSize: Ref<Size>) {
+export function useZoom(
+    imageSize: Ref<Size | null>,
+    viewportSize: Ref<Size>,
+    sourceId: Ref<number>,
+) {
     const isFit = ref(true);
     const manualZoom = ref(1);
 
@@ -44,8 +48,8 @@ export function useZoom(imageSize: Ref<Size | null>, viewportSize: Ref<Size>) {
         if (imageSize.value) setZoom(1);
     }
 
-    watch(imageSize, (nextSize, previousSize) => {
-        if (!nextSize || !previousSize) fitToView();
+    watch([imageSize, sourceId], ([nextSize, nextSourceId], [previousSize, previousSourceId]) => {
+        if (nextSourceId !== previousSourceId || !nextSize || !previousSize) fitToView();
     });
 
     return { zoom, isFit, canZoomIn, canZoomOut, zoomIn, zoomOut, fitToView, actualSize };
