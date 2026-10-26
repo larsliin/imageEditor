@@ -7,9 +7,11 @@
         canApply: boolean
         busy: boolean
         error?: string | null
+        dim?: boolean
     }>(), {
         applyLabel: 'Apply',
         error: null,
+        dim: true,
     });
 
     const emit = defineEmits<{
@@ -47,6 +49,7 @@
         <dialog
             ref="dialog"
             class="tool-modal"
+            :class="{ 'tool-modal--clear': !dim }"
             :aria-labelledby="titleId"
             @cancel.prevent="cancel"
             @keydown.esc.stop.prevent="cancel"
@@ -87,6 +90,14 @@
 
 .tool-modal::backdrop {
   background: rgb(0 0 0 / 60%);
+}
+
+.tool-modal--clear {
+  box-shadow: 0 24px 80px rgb(0 0 0 / 80%), 0 0 0 1px rgb(0 0 0 / 40%);
+}
+
+.tool-modal--clear::backdrop {
+  background: transparent;
 }
 
 .tool-modal__form {

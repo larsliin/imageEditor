@@ -4,6 +4,7 @@
     import { usePan } from '@/composables/usePan';
     import CropOverlay from './CropOverlay.vue';
     import type { CropRect } from '@/lib/crop';
+    import { applyLevelsToPixels, type LevelsParams } from '@/lib/levels';
 
     const props = defineProps<{
         bitmap: ImageBitmap | null
@@ -13,6 +14,7 @@
         busy: boolean
         loading: boolean
         error: string | null
+        levelsPreview?: LevelsParams | null
     }>();
 
     const emit = defineEmits<{
@@ -79,12 +81,21 @@
     );
 
     watch(
-        [() => props.bitmap, canvasRef],
-        ([bitmap, canvas]) => {
+        [() => props.bitmap, canvasRef, () => props.levelsPreview],
+        ([bitmap, canvas, levels]) => {
             if (!bitmap || !canvas) return;
-            canvas.width = bitmap.width;
-            canvas.height = bitmap.height;
-            canvas.getContext('2d')?.drawImage(bitmap, 0, 0);
+            if (canvas.width !== bitmap.width || canvas.height !== bitmap.height) {
+                canvas.width = bitmap.width;
+                canvas.height = bitmap.height;
+            }
+            const context = canvas.getContext('2d', { willReadFrequently: true });
+            if (!context) return;
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            context.drawImage(bitmap, 0, 0);
+            if (!levels) return;
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            applyLevelsToPixels(imageData.data, levels);
+            context.putImageData(imageData, 0, 0);
         },
         { flush: 'post' },
     );

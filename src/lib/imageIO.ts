@@ -1,3 +1,5 @@
+import { applyLevelsToPixels, type LevelsParams } from './levels';
+
 export type ExportMimeType = 'image/png' | 'image/jpeg' | 'image/webp';
 
 const EXPORT_EXTENSIONS: Record<ExportMimeType, string> = {
@@ -77,6 +79,18 @@ export async function resizeImageBitmap(source: ImageBitmap, width: number, heig
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = 'high';
     context.drawImage(source, 0, 0, width, height);
+    return createImageBitmap(canvas);
+}
+
+export async function levelsImageBitmap(source: ImageBitmap, levels: LevelsParams): Promise<ImageBitmap> {
+    const canvas = renderToCanvas(source);
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('Canvas 2D rendering is not available in this browser.');
+    }
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    applyLevelsToPixels(imageData.data, levels);
+    context.putImageData(imageData, 0, 0);
     return createImageBitmap(canvas);
 }
 

@@ -2,6 +2,7 @@ import { computed, onScopeDispose, readonly, ref, shallowRef } from 'vue';
 import type { ImageInfo } from '@/types/editor';
 import { isValidCrop, type CropRect } from '@/lib/crop';
 import { MAX_RESIZE_DIMENSION, isValidResize } from '@/lib/resize';
+import { isIdentityLevels, isValidLevels, type LevelsParams } from '@/lib/levels';
 import type { Size } from '@/lib/zoom';
 import {
     canvasToBlob,
@@ -11,6 +12,7 @@ import {
     pickImageFile,
     renderToCanvas,
     resizeImageBitmap,
+    levelsImageBitmap,
     resolveExportMimeType,
     rotateImageBitmap,
 } from '@/lib/imageIO';
@@ -171,6 +173,34 @@ export function useImageDocument() {
         }
     }
 
+    async function levelsImage(levels: LevelsParams): Promise<boolean> {
+        const doc = current.value;
+        if (!doc || isBusy.value) return false;
+        if (!isValidLevels(levels)) {
+            error.value = 'The black point must be below the white point, and gamma between 0.10 and 9.99.';
+            return false;
+        }
+        if (isIdentityLevels(levels)) return true;
+        status.value = 'processing';
+        error.value = null;
+        try {
+            const adjusted = await levelsImageBitmap(doc.bitmap, levels);
+            if (disposed) {
+                adjusted.close();
+                return false;
+            }
+            if (doc.bitmap !== doc.original) doc.bitmap.close();
+            current.value = { ...doc, bitmap: adjusted };
+            revision.value = ++nextRevision;
+            return true;
+        } catch (e) {
+            error.value = errorMessage(e, 'The levels could not be applied.');
+            return false;
+        } finally {
+            status.value = 'idle';
+        }
+    }
+
     function resetImage() {
         const doc = current.value;
         if (!doc || !canReset.value || isBusy.value) return;
@@ -243,6 +273,7 @@ export function useImageDocument() {
         cropImage,
         rotateImage,
         resizeImage,
+        levelsImage,
         resetImage,
         renameImage,
         exportImage,

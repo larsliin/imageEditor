@@ -10,8 +10,10 @@
     import type { Size } from './lib/zoom';
     import type { ToolId } from './types/editor';
     import type { CropRect } from './lib/crop';
+    import LevelsControls from './components/editor/LevelsControls.vue';
+    import type { LevelsParams } from './lib/levels';
 
-    const { bitmap, info, documentId, status, error, isBusy, importImage, exportImage, cropImage, rotateImage, resizeImage, renameImage, dismissError }
+    const { bitmap, info, documentId, status, error, isBusy, importImage, exportImage, cropImage, rotateImage, resizeImage, levelsImage, renameImage, dismissError }
         = useImageDocument();
 
     const viewportSize = ref<Size>({ width: 0, height: 0 });
@@ -38,6 +40,16 @@
     async function applyResize(size: Size) {
         if (await resizeImage(size)) activeTool.value = null;
     }
+
+    async function applyLevels(levels: LevelsParams) {
+        if (await levelsImage(levels)) activeTool.value = null;
+    }
+
+    const levelsPreview = ref<LevelsParams | null>(null);
+
+    watch(activeTool, () => {
+        levelsPreview.value = null;
+    });
 
     watch(bitmap, () => {
         activeTool.value = null;
@@ -71,6 +83,7 @@
             :busy="isBusy"
             :loading="status === 'loading'"
             :error="error"
+            :levels-preview="levelsPreview"
             @import="importImage"
             @dismiss-error="dismissError"
             @viewport-resize="viewportSize = $event"
@@ -87,6 +100,15 @@
             :disabled="isBusy"
             :error="error"
             @apply="applyResize"
+            @cancel="activeTool = null"
+        />
+        <LevelsControls
+            v-if="activeTool === 'levels' && bitmap"
+            :image="bitmap"
+            :disabled="isBusy"
+            :error="error"
+            @preview="levelsPreview = $event"
+            @apply="applyLevels"
             @cancel="activeTool = null"
         />
     </div>
