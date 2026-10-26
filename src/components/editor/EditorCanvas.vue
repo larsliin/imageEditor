@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { computed, nextTick, onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue';
+    import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
     import { displaySize, type Size } from '@/lib/zoom';
     import { usePan } from '@/composables/usePan';
     import CropOverlay from './CropOverlay.vue';
@@ -23,11 +23,19 @@
         import: []
         'dismiss-error': []
         'viewport-resize': [size: Size]
-        crop: [crop: CropRect]
+        crop: [crop: CropRect, angle: number]
         'cancel-crop': []
         'zoom-in': []
         'zoom-out': []
     }>();
+
+    const cropAngle = ref(0);
+    watch(() => props.cropEnabled, () => {
+        cropAngle.value = 0;
+    });
+    watch(() => props.bitmap, () => {
+        cropAngle.value = 0;
+    });
 
     const viewportRef = useTemplateRef<HTMLDivElement>('viewport');
     const imageSurfaceRef = useTemplateRef<HTMLDivElement>('image-surface');
@@ -180,13 +188,15 @@
                     class="preview"
                     :class="{ 'is-magnified': zoom > 1 }"
                     aria-label="Image preview"
+                    :style="cropEnabled && cropAngle !== 0 ? { transform: `rotate(${cropAngle}deg)` } : undefined"
                 ></canvas>
                 <CropOverlay
                     v-if="cropEnabled"
+                    v-model:angle="cropAngle"
                     :image="bitmap"
                     :disabled="busy"
                     :pan-mode="isPanMode"
-                    @apply="emit('crop', $event)"
+                    @apply="(crop, angle) => emit('crop', crop, angle)"
                     @cancel="emit('cancel-crop')"
                 />
             </div>

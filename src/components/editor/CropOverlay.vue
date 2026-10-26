@@ -1,6 +1,6 @@
 <script setup lang="ts">
-    import { computed, ref, shallowRef, useTemplateRef } from 'vue';
-    import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, isValidCrop, previewToImagePoint, type CropRect, type CropHandle, type Point } from '@/lib/crop';
+    import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue';
+    import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, isValidCrop, previewToImagePoint, isCropInsideRotatedImage, isValidAngle, largestCropInsideRotatedImage, MAX_STRAIGHTEN_ANGLE, type CropRect, type CropHandle, type Point } from '@/lib/crop';
     import type { Size } from '@/lib/zoom';
 
     const props = defineProps<{
@@ -9,8 +9,10 @@
         panMode: boolean
     }>();
 
+    const angle = defineModel<number>('angle', { default: 0 });
+
     const emit = defineEmits<{
-        apply: [crop: CropRect]
+        apply: [crop: CropRect, angle: number]
         cancel: []
     }>();
 
@@ -34,16 +36,59 @@
     let pointerId: number | null = null;
     let previousCrop: CropRect | null = null;
 
-    const valid = computed(() => isValidCrop(crop.value, props.image));
+    const rectValid = computed(() => isValidCrop(crop.value, props.image));
+    const angleValid = computed(() => isValidAngle(angle.value));
+    const valid = computed(() =>
+        rectValid.value && angleValid.value && isCropInsideRotatedImage(crop.value, props.image, angle.value),
+    );
     const unchanged = computed(() =>
-        crop.value.x === 0 && crop.value.y === 0
+        angle.value === 0
+        && crop.value.x === 0 && crop.value.y === 0
         && crop.value.width === props.image.width && crop.value.height === props.image.height,
     );
+
+    // Keep the selection inside the image when X/Y or width/height are edited numerically.
+    watch(() => [crop.value.x, crop.value.y] as const, ([x, y]) => {
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+        const width = Math.max(1, Math.min(crop.value.width, props.image.width - x));
+        const height = Math.max(1, Math.min(crop.value.height, props.image.height - y));
+        if (Number.isFinite(width) && width !== crop.value.width) crop.value.width = width;
+        if (Number.isFinite(height) && height !== crop.value.height) crop.value.height = height;
+    });
+
+    watch(() => [crop.value.width, crop.value.height] as const, ([width, height]) => {
+        if (!Number.isFinite(width) || !Number.isFinite(height)) return;
+        const maxWidth = props.image.width - crop.value.x;
+        const maxHeight = props.image.height - crop.value.y;
+        if (maxWidth >= 1 && width > maxWidth) crop.value.width = maxWidth;
+        if (maxHeight >= 1 && height > maxHeight) crop.value.height = maxHeight;
+    });
+
+    // While the crop is untouched by the user, it follows the largest safe crop for the current angle.
+    let autoCrop = true;
+
+    watch(angle, (value) => {
+        if (!isValidAngle(value)) return;
+        if (autoCrop) {
+            crop.value = largestCropInsideRotatedImage(props.image, value);
+            return;
+        }
+        if (rectValid.value && !isCropInsideRotatedImage(crop.value, props.image, value)) {
+            crop.value = largestCropInsideRotatedImage(props.image, value);
+        }
+    });
+    // Keep showing the last valid selection (and grid) while a field is empty or invalid.
+    const displayCrop = shallowRef<CropRect>({ ...crop.value });
+    watch(crop, (value) => {
+        if (isValidCrop(value, props.image)) displayCrop.value = { ...value };
+        else if (dragging.value) displayCrop.value = { x: 0, y: 0, width: 0, height: 0 };
+    }, { deep: true });
+
     const selectionStyle = computed(() => ({
-        left: `${crop.value.x / props.image.width * 100}%`,
-        top: `${crop.value.y / props.image.height * 100}%`,
-        width: `${crop.value.width / props.image.width * 100}%`,
-        height: `${crop.value.height / props.image.height * 100}%`,
+        left: `${displayCrop.value.x / props.image.width * 100}%`,
+        top: `${displayCrop.value.y / props.image.height * 100}%`,
+        width: `${displayCrop.value.width / props.image.width * 100}%`,
+        height: `${displayCrop.value.height / props.image.height * 100}%`,
     }));
 
     function point(event: PointerEvent): Point {
@@ -59,6 +104,7 @@
     function beginSelection(event: PointerEvent, handle: CropHandle | null = null) {
         if (props.disabled || props.panMode || pointerId !== null || event.button !== 0 || !surface.value) return;
         event.preventDefault();
+        autoCrop = false;
         surface.value.focus({ preventScroll: true });
         surface.value.setPointerCapture(event.pointerId);
         pointerId = event.pointerId;
@@ -119,15 +165,27 @@
         event.preventDefault();
         event.stopPropagation();
         if (props.disabled || props.panMode || dragging.value) return;
+        autoCrop = false;
         crop.value = resizeCrop(crop.value, handle, {
             x: event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0,
             y: event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0,
         }, props.image, event.shiftKey);
     }
 
+    function zeroIfEmpty(event: FocusEvent, field: keyof CropRect | 'angle') {
+        if ((event.target as HTMLInputElement).value !== '') return;
+        if (field === 'angle') angle.value = 0;
+        else crop.value[field] = 0;
+    }
+
+    function onFormInput(event: Event) {
+        const label = (event.target as HTMLElement).getAttribute('aria-label') ?? '';
+        if (label.startsWith('Crop ')) autoCrop = false;
+    }
+
     function apply() {
         if (!props.disabled && !dragging.value && valid.value && !unchanged.value) {
-            emit('apply', { ...crop.value });
+            emit('apply', { ...crop.value }, angle.value);
         }
     }
 </script>
@@ -150,12 +208,12 @@
         @keydown.esc.prevent="emit('cancel')"
     >
         <div
-            v-if="valid"
+            v-if="displayCrop.width > 0 && displayCrop.height > 0"
             class="crop-selection"
             :class="{ 'is-movable': !unchanged && !panMode }"
             :style="selectionStyle"
         >
-            <span v-if="!unchanged" class="crop-grid" aria-hidden="true"></span>
+            <span class="crop-grid" aria-hidden="true"></span>
             <template v-if="!panMode">
                 <button
                     v-for="handle in handles"
@@ -173,18 +231,29 @@
         </div>
     </div>
     <Teleport defer to="#editor-tool-controls">
-        <form class="crop-controls" aria-label="Crop controls" @submit.prevent="apply" @keydown.esc.prevent="emit('cancel')">
+        <form class="crop-controls" aria-label="Crop controls" @submit.prevent="apply" @input="onFormInput" @keydown.esc.prevent="emit('cancel')">
             <fieldset :disabled="disabled || dragging">
-                <label>X <input v-model.number="crop.x" aria-label="Crop X" type="number" min="0" :max="image.width - 1" required step="1" /></label>
-                <label>Y <input v-model.number="crop.y" aria-label="Crop Y" type="number" min="0" :max="image.height - 1" required step="1" /></label>
+                <label>X <input v-model.number="crop.x" aria-label="Crop X" type="number" min="0" :max="image.width - 1" required step="1" @blur="zeroIfEmpty($event, 'x')" /></label>
+                <label>Y <input v-model.number="crop.y" aria-label="Crop Y" type="number" min="0" :max="image.height - 1" required step="1" @blur="zeroIfEmpty($event, 'y')" /></label>
                 <label>Width <input v-model.number="crop.width" aria-label="Crop width" type="number" min="1"
-                    :max="image.width - crop.x" required step="1" /></label>
+                    :max="image.width - crop.x" required step="1" @blur="zeroIfEmpty($event, 'width')" /></label>
                 <label>Height <input v-model.number="crop.height" aria-label="Crop height" type="number" min="1"
-                    :max="image.height - crop.y" required step="1" /></label>
+                    :max="image.height - crop.y" required step="1" @blur="zeroIfEmpty($event, 'height')" /></label>
+                <label>Straighten
+                    <input v-model.number="angle" class="crop-angle-range" aria-label="Straighten angle slider" type="range"
+                        :min="-MAX_STRAIGHTEN_ANGLE" :max="MAX_STRAIGHTEN_ANGLE" step="0.1" />
+                </label>
+                <label><input v-model.number="angle" aria-label="Straighten angle in degrees" type="number"
+                    :min="-MAX_STRAIGHTEN_ANGLE" :max="MAX_STRAIGHTEN_ANGLE" step="0.1" required @blur="zeroIfEmpty($event, 'angle')" /> deg</label>
+                <button type="button" class="icon-button" aria-label="Reset angle" title="Reset angle" :disabled="angle === 0" @click="angle = 0">
+                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                </button>
+                <p v-if="!valid && !dragging" class="crop-error" role="alert" :title="`Enter a non-empty crop inside the image bounds and an angle within ±${MAX_STRAIGHTEN_ANGLE}°.`">
+                    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Invalid crop or angle
+                </p>
                 <button type="submit" :disabled="!valid || unchanged">Apply crop</button>
                 <button type="button" @click="emit('cancel')">Cancel</button>
             </fieldset>
-            <p v-if="!valid && !dragging" role="alert">Enter a non-empty crop inside the image bounds.</p>
         </form>
     </Teleport>
 </template>
@@ -259,15 +328,38 @@
 }
 
 .crop-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 4px 0;
+  white-space: nowrap;
+}
+
+.crop-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 0 auto;
+  font-size: 12px;
+  color: #ffa3a3;
+}
+
+.crop-error + button[type='submit'] {
+  margin-left: 0;
 }
 
 fieldset {
   display: flex;
+  flex: 1;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   padding: 0;
   border: 0;
+}
+
+button[type='submit'] {
+  margin-left: auto;
 }
 
 label {
@@ -288,12 +380,36 @@ button {
   font: inherit;
 }
 
-input {
+input[type='range'] {
+  width: 140px;
+  padding: 0;
+}
+
+input[type='number'] {
   width: 78px;
 }
 
 button {
   cursor: pointer;
+}
+
+.crop-controls button {
+  border-radius: var(--radius-button);
+}
+
+.crop-controls button[type='button'] {
+  background: var(--color-button-secondary);
+  border-color: var(--color-button-secondary-border);
+}
+
+.crop-controls button[type='button']:hover:not(:disabled) {
+  background: var(--color-button-secondary-hover);
+  border-color: var(--color-button-secondary-border-hover);
+}
+
+.icon-button {
+  width: 30px;
+  padding: 0;
 }
 
 button[type='submit'] {
@@ -304,6 +420,10 @@ button[type='submit'] {
 button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.crop-controls button[type='button']:disabled {
+  opacity: var(--opacity-button-secondary-disabled);
 }
 
 input:focus-visible,

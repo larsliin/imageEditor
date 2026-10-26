@@ -26,6 +26,58 @@ export function isValidCrop(crop: CropRect, image: Size): boolean {
     );
 }
 
+export const MAX_STRAIGHTEN_ANGLE = 45;
+
+export function isValidAngle(angle: number): boolean {
+    return Number.isFinite(angle) && Math.abs(angle) <= MAX_STRAIGHTEN_ANGLE;
+}
+
+// The image is rotated around its center; its canvas frame stays the same size as the source.
+export function isCropInsideRotatedImage(crop: CropRect, image: Size, angleDegrees: number): boolean {
+    const radians = angleDegrees * Math.PI / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    const epsilon = 1e-6;
+    const corners: [number, number][] = [
+        [crop.x, crop.y],
+        [crop.x + crop.width, crop.y],
+        [crop.x, crop.y + crop.height],
+        [crop.x + crop.width, crop.y + crop.height],
+    ];
+    return corners.every(([cx, cy]) => {
+        const dx = cx - image.width / 2;
+        const dy = cy - image.height / 2;
+        const x = dx * cos + dy * sin;
+        const y = -dx * sin + dy * cos;
+        return Math.abs(x) <= image.width / 2 + epsilon && Math.abs(y) <= image.height / 2 + epsilon;
+    });
+}
+
+// Largest centered crop with the image's aspect ratio that contains no empty corners after rotation.
+export function largestCropInsideRotatedImage(image: Size, angleDegrees: number): CropRect {
+    const radians = Math.abs(angleDegrees) * Math.PI / 180;
+    const sin = Math.sin(radians);
+    const cos = Math.cos(radians);
+    const scale = Math.min(
+        image.width / (image.width * cos + image.height * sin),
+        image.height / (image.width * sin + image.height * cos),
+        1,
+    );
+    let width = Math.max(1, Math.floor(image.width * scale));
+    let height = Math.max(1, Math.floor(image.height * scale));
+    for (;;) {
+        const crop = {
+            x: Math.floor((image.width - width) / 2),
+            y: Math.floor((image.height - height) / 2),
+            width,
+            height,
+        };
+        if ((width === 1 && height === 1) || isCropInsideRotatedImage(crop, image, angleDegrees)) return crop;
+        width = Math.max(1, width - 2);
+        height = Math.max(1, height - 2);
+    }
+}
+
 export function previewToImagePoint(
     point: Point,
     preview: { left: number; top: number; width: number; height: number },

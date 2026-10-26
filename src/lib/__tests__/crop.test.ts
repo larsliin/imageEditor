@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, isValidCrop, previewToImagePoint, type CropHandle } from '../crop.ts';
+import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, isValidCrop, previewToImagePoint, type CropHandle, largestCropInsideRotatedImage, isCropInsideRotatedImage } from '../crop.ts';
 
 test('accepts full image, edge-aligned, and single-pixel crops', () => {
     const image = { width: 800, height: 600 };
@@ -170,4 +170,15 @@ test('Shift corner resizing creates squares anchored to the opposite corner', ()
         assert.deepEqual(resizeCrop(crop, handle, { x: 20, y: 30 }, image, true),
             resizeCrop(crop, handle, { x: 20, y: 30 }, image));
     }
+});
+
+test('straighten: zero angle keeps full image; rotation shrinks the safe crop', () => {
+    const image = { width: 800, height: 600 };
+    assert.deepEqual(largestCropInsideRotatedImage(image, 0), { x: 0, y: 0, width: 800, height: 600 });
+    const crop = largestCropInsideRotatedImage(image, 5);
+    assert.ok(crop.width < 800 && crop.height < 600);
+    assert.ok(isCropInsideRotatedImage(crop, image, 5));
+    assert.ok(isCropInsideRotatedImage(crop, image, -5));
+    assert.ok(!isCropInsideRotatedImage({ x: 0, y: 0, width: 800, height: 600 }, image, 5));
+    assert.ok(isValidCrop(crop, image));
 });

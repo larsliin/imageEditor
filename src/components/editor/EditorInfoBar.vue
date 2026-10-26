@@ -114,8 +114,14 @@
 }
 
 .tool-controls {
-  flex-shrink: 0;
-  margin-left: auto;
+  display: flex;
+  flex: 1 0 auto;
+  padding-left: 24px;
+  border-left: 1px solid var(--color-border);
+}
+
+.tool-controls > :deep(*) {
+  flex: 1;
 }
 
 .tool-controls:empty {

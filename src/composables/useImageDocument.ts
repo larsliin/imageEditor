@@ -1,6 +1,6 @@
 import { computed, onScopeDispose, readonly, ref, shallowRef } from 'vue';
 import type { ImageInfo } from '@/types/editor';
-import { isValidCrop, type CropRect } from '@/lib/crop';
+import { isCropInsideRotatedImage, isValidAngle, isValidCrop, type CropRect } from '@/lib/crop';
 import { MAX_RESIZE_DIMENSION, isValidResize } from '@/lib/resize';
 import { isIdentityLevels, isValidLevels, type LevelsParams } from '@/lib/levels';
 import { isIdentityCurves, isValidCurves, type CurvesParams } from '@/lib/curves';
@@ -17,6 +17,7 @@ import {
     curvesImageBitmap,
     resolveExportMimeType,
     rotateImageBitmap,
+    rotateCropImageBitmap,
 } from '@/lib/imageIO';
 
 export type DocumentStatus = 'idle' | 'loading' | 'processing' | 'exporting';
@@ -94,20 +95,26 @@ export function useImageDocument() {
         }
     }
 
-    async function cropImage(crop: CropRect): Promise<boolean> {
+    async function cropImage(crop: CropRect, angle = 0): Promise<boolean> {
         const doc = current.value;
         if (!doc || isBusy.value) return false;
         if (!isValidCrop(crop, doc.bitmap)) {
             error.value = 'Select a non-empty crop inside the image bounds.';
             return false;
         }
-        if (crop.x === 0 && crop.y === 0 && crop.width === doc.bitmap.width && crop.height === doc.bitmap.height) {
+        if (!isValidAngle(angle) || !isCropInsideRotatedImage(crop, doc.bitmap, angle)) {
+            error.value = 'The crop must stay inside the rotated image so no empty space is left.';
+            return false;
+        }
+        if (angle === 0 && crop.x === 0 && crop.y === 0 && crop.width === doc.bitmap.width && crop.height === doc.bitmap.height) {
             return true;
         }
         status.value = 'processing';
         error.value = null;
         try {
-            const cropped = await createImageBitmap(doc.bitmap, crop.x, crop.y, crop.width, crop.height);
+            const cropped = angle === 0
+                ? await createImageBitmap(doc.bitmap, crop.x, crop.y, crop.width, crop.height)
+                : await rotateCropImageBitmap(doc.bitmap, angle, crop);
             if (disposed) {
                 cropped.close();
                 return false;

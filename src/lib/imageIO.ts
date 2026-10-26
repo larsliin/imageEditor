@@ -69,6 +69,27 @@ export async function rotateImageBitmap(source: ImageBitmap): Promise<ImageBitma
     return createImageBitmap(canvas);
 }
 
+export async function rotateCropImageBitmap(
+    source: ImageBitmap,
+    angleDegrees: number,
+    crop: { x: number; y: number; width: number; height: number },
+): Promise<ImageBitmap> {
+    const canvas = document.createElement('canvas');
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('Canvas 2D rendering is not available in this browser.');
+    }
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    context.translate(-crop.x, -crop.y);
+    context.translate(source.width / 2, source.height / 2);
+    context.rotate(angleDegrees * Math.PI / 180);
+    context.drawImage(source, -source.width / 2, -source.height / 2);
+    return createImageBitmap(canvas);
+}
+
 export async function resizeImageBitmap(source: ImageBitmap, width: number, height: number): Promise<ImageBitmap> {
     const canvas = document.createElement('canvas');
     canvas.width = width;

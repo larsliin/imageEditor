@@ -38,8 +38,8 @@
         activeTool.value = activeTool.value === tool ? null : tool;
     }
 
-    async function applyCrop(crop: CropRect) {
-        if (await cropImage(crop)) activeTool.value = null;
+    async function applyCrop(crop: CropRect, angle: number) {
+        if (await cropImage(crop, angle)) activeTool.value = null;
     }
 
     async function applyResize(size: Size) {
@@ -101,7 +101,7 @@
             @viewport-resize="viewportSize = $event"
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
-            @crop="applyCrop"
+            @crop="(crop, angle) => applyCrop(crop, angle)"
             @cancel-crop="activeTool = null"
         >
             <template #overlay>
