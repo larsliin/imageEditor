@@ -5,7 +5,6 @@
         activeTool: ToolId | null
         hasImage: boolean
         busy: boolean
-        canReset: boolean
         canZoomIn: boolean
         canZoomOut: boolean
     }>();
@@ -13,7 +12,7 @@
     const emit = defineEmits<{
         import: []
         export: []
-        reset: []
+        'rotate-image': []
         'select-tool': [tool: ToolId]
         'zoom-in': []
         'zoom-out': []
@@ -43,35 +42,36 @@
             >
                 <i class="bi bi-download" aria-hidden="true"></i>
             </button>
-            <button
-                type="button"
-                class="tool-button"
-                aria-label="Reset to original"
-                title="Reset to original"
-                :disabled="!canReset || busy"
-                @click="emit('reset')"
-            >
-                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-            </button>
         </div>
 
         <hr class="separator" />
 
         <div class="tool-group" role="group" aria-label="Edit tools">
-            <button
-                v-for="tool in EDIT_TOOLS"
-                :key="tool.id"
-                type="button"
-                class="tool-button"
-                :class="{ 'is-active': activeTool === tool.id }"
-                :aria-pressed="activeTool === tool.id"
-                :aria-label="tool.label"
-                :title="tool.label"
-                :disabled="!hasImage || busy"
-                @click="emit('select-tool', tool.id)"
-            >
-                <i class="bi" :class="tool.icon" aria-hidden="true"></i>
-            </button>
+            <template v-for="tool in EDIT_TOOLS" :key="tool.id">
+                <button
+                    type="button"
+                    class="tool-button"
+                    :class="{ 'is-active': activeTool === tool.id }"
+                    :aria-pressed="activeTool === tool.id"
+                    :aria-label="tool.label"
+                    :title="tool.label"
+                    :disabled="!hasImage || busy"
+                    @click="emit('select-tool', tool.id)"
+                >
+                    <i class="bi" :class="tool.icon" aria-hidden="true"></i>
+                </button>
+                <button
+                    v-if="tool.id === 'resize'"
+                    type="button"
+                    class="tool-button"
+                    aria-label="Rotate image"
+                    title="Rotate image 90° clockwise"
+                    :disabled="!hasImage || busy"
+                    @click="emit('rotate-image')"
+                >
+                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                </button>
+            </template>
         </div>
 
         <hr class="separator" />

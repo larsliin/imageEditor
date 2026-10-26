@@ -6,7 +6,7 @@ import {
     nextZoomIn,
     nextZoomOut,
     type Size,
-} from '@/lib/zoom';
+} from '../lib/zoom.ts';
 
 /**
  * Zoom state for the image preview. Starts in "fit" mode (follows viewport size)
@@ -44,7 +44,9 @@ export function useZoom(imageSize: Ref<Size | null>, viewportSize: Ref<Size>) {
         if (imageSize.value) setZoom(1);
     }
 
-    watch(imageSize, fitToView);
+    watch(imageSize, (nextSize, previousSize) => {
+        if (!nextSize || !previousSize) fitToView();
+    });
 
     return { zoom, isFit, canZoomIn, canZoomOut, zoomIn, zoomOut, fitToView, actualSize };
 }

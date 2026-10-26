@@ -52,6 +52,34 @@ export function renderToCanvas(source: ImageBitmap): HTMLCanvasElement {
     return canvas;
 }
 
+export async function rotateImageBitmap(source: ImageBitmap): Promise<ImageBitmap> {
+    const canvas = document.createElement('canvas');
+    canvas.width = source.height;
+    canvas.height = source.width;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('Canvas 2D rendering is not available in this browser.');
+    }
+    context.translate(canvas.width / 2, canvas.height / 2);
+    context.rotate(Math.PI / 2);
+    context.drawImage(source, -source.width / 2, -source.height / 2);
+    return createImageBitmap(canvas);
+}
+
+export async function resizeImageBitmap(source: ImageBitmap, width: number, height: number): Promise<ImageBitmap> {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('Canvas 2D rendering is not available in this browser.');
+    }
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    context.drawImage(source, 0, 0, width, height);
+    return createImageBitmap(canvas);
+}
+
 export function canvasToBlob(canvas: HTMLCanvasElement, mimeType: ExportMimeType): Promise<Blob> {
     const quality = mimeType === 'image/png' ? undefined : LOSSY_EXPORT_QUALITY;
     return new Promise((resolve, reject) => {

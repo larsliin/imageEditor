@@ -1,6 +1,8 @@
 import { computed, onScopeDispose, readonly, ref, shallowRef } from 'vue';
 import type { ImageInfo } from '@/types/editor';
 import { isValidCrop, type CropRect } from '@/lib/crop';
+import { MAX_RESIZE_DIMENSION, isValidResize } from '@/lib/resize';
+import type { Size } from '@/lib/zoom';
 import {
     canvasToBlob,
     decodeImageFile,
@@ -8,7 +10,9 @@ import {
     exportFileName,
     pickImageFile,
     renderToCanvas,
+    resizeImageBitmap,
     resolveExportMimeType,
+    rotateImageBitmap,
 } from '@/lib/imageIO';
 
 export type DocumentStatus = 'idle' | 'loading' | 'processing' | 'exporting';
@@ -114,6 +118,57 @@ export function useImageDocument() {
         }
     }
 
+    async function rotateImage(): Promise<boolean> {
+        const doc = current.value;
+        if (!doc || isBusy.value) return false;
+        status.value = 'processing';
+        error.value = null;
+        try {
+            const rotated = await rotateImageBitmap(doc.bitmap);
+            if (disposed) {
+                rotated.close();
+                return false;
+            }
+            if (doc.bitmap !== doc.original) doc.bitmap.close();
+            current.value = { ...doc, bitmap: rotated };
+            revision.value = ++nextRevision;
+            return true;
+        } catch (e) {
+            error.value = errorMessage(e, 'The image could not be rotated.');
+            return false;
+        } finally {
+            status.value = 'idle';
+        }
+    }
+
+    async function resizeImage(size: Size): Promise<boolean> {
+        const doc = current.value;
+        if (!doc || isBusy.value) return false;
+        if (!isValidResize(size)) {
+            error.value = `Enter a width and height between 1 and ${MAX_RESIZE_DIMENSION} px.`;
+            return false;
+        }
+        if (size.width === doc.bitmap.width && size.height === doc.bitmap.height) return true;
+        status.value = 'processing';
+        error.value = null;
+        try {
+            const resized = await resizeImageBitmap(doc.bitmap, size.width, size.height);
+            if (disposed) {
+                resized.close();
+                return false;
+            }
+            if (doc.bitmap !== doc.original) doc.bitmap.close();
+            current.value = { ...doc, bitmap: resized };
+            revision.value = ++nextRevision;
+            return true;
+        } catch (e) {
+            error.value = errorMessage(e, 'The image could not be resized. It may be too large for this browser.');
+            return false;
+        } finally {
+            status.value = 'idle';
+        }
+    }
+
     function resetImage() {
         const doc = current.value;
         if (!doc || !canReset.value || isBusy.value) return;
@@ -183,6 +238,8 @@ export function useImageDocument() {
         canReset,
         importImage,
         cropImage,
+        rotateImage,
+        resizeImage,
         resetImage,
         renameImage,
         exportImage,

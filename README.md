@@ -24,6 +24,11 @@ reliable image-preview, import, and export workflow.
   views. Fit-to-window scales smaller images up and larger images down to the
   available preview area, within the 1%-3200% zoom range. Actual size shows the
   image at 100%. Hold Space to pan while using the crop tool.
+- **Resize** opens a modal with width and height in pixels. Aspect ratio is
+  locked by default; unlock it to set dimensions independently. Each side must
+  be a whole number between 1 and 16384 pixels. **Apply resize** or Enter applies
+  the change; **Cancel** or Escape discards it. Processing failures are shown
+  inside the modal without discarding the entered dimensions.
 - **Download the edited image** at its full pixel resolution. PNG, JPEG, and WebP
   files are exported in their original format; other formats are exported as
   PNG. Downloading creates a new file and does not overwrite the source.
@@ -37,7 +42,12 @@ reliable image-preview, import, and export workflow.
   page if edits have not been downloaded. The browser cannot confirm whether a
   download finishes.
 
-Resize, Levels, and Curves are shown in the toolbar but are not implemented yet.
+Levels and Curves are shown in the toolbar but are not implemented yet.
+
+Tool dialogs share `src/components/editor/ToolModal.vue`: provide a title,
+apply label, validity, busy/error state, and tool-specific fields through its
+default slot. It emits `apply` and `cancel` and handles modal focus, keyboard
+navigation, and shared actions. Mount it conditionally while the tool is open.
 
 ## Development
 
@@ -59,7 +69,7 @@ npm run build
 Run the crop-coordinate and zoom tests with Node.js 22.18 or later:
 
 ```sh
-node --test src/lib/__tests__/crop.test.ts src/lib/__tests__/zoom.test.ts
+node --test src/lib/__tests__/crop.test.ts src/lib/__tests__/zoom.test.ts src/lib/__tests__/useZoom.test.ts
 ```
 
 ## Tech stack

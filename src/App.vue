@@ -4,13 +4,14 @@
     import EditorToolbar from './components/editor/EditorToolbar.vue';
     import EditorCanvas from './components/editor/EditorCanvas.vue';
     import ZoomControls from './components/editor/ZoomControls.vue';
+    import ResizeControls from './components/editor/ResizeControls.vue';
     import { useImageDocument } from './composables/useImageDocument';
     import { useZoom } from './composables/useZoom';
     import type { Size } from './lib/zoom';
     import type { ToolId } from './types/editor';
     import type { CropRect } from './lib/crop';
 
-    const { bitmap, info, status, error, isBusy, canReset, importImage, exportImage, cropImage, resetImage, renameImage, dismissError }
+    const { bitmap, info, status, error, isBusy, importImage, exportImage, cropImage, rotateImage, resizeImage, renameImage, dismissError }
         = useImageDocument();
 
     const viewportSize = ref<Size>({ width: 0, height: 0 });
@@ -33,6 +34,10 @@
         if (await cropImage(crop)) activeTool.value = null;
     }
 
+    async function applyResize(size: Size) {
+        if (await resizeImage(size)) activeTool.value = null;
+    }
+
     watch(bitmap, () => {
         activeTool.value = null;
     });
@@ -46,13 +51,12 @@
             :active-tool="activeTool"
             :has-image="bitmap !== null"
             :busy="isBusy"
-            :can-reset="canReset"
             :can-zoom-in="canZoomIn"
             :can-zoom-out="canZoomOut"
             @select-tool="selectTool"
             @import="importImage"
             @export="exportImage"
-            @reset="resetImage"
+            @rotate-image="rotateImage"
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
         />
@@ -75,6 +79,14 @@
                 <ZoomControls :zoom="zoom" :is-fit="isFit" @fit="fitToView" @actual-size="actualSize" />
             </template>
         </EditorCanvas>
+        <ResizeControls
+            v-if="activeTool === 'resize' && imageSize"
+            :image="imageSize"
+            :disabled="isBusy"
+            :error="error"
+            @apply="applyResize"
+            @cancel="activeTool = null"
+        />
     </div>
 </template>
 

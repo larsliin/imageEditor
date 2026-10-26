@@ -132,8 +132,13 @@
                 />
             </div>
             <div v-else class="empty-state">
-                <i class="bi bi-image" aria-hidden="true"></i>
-                <p>No image open</p>
+                <div class="empty-state__icon" aria-hidden="true">
+                    <i class="bi bi-image"></i>
+                </div>
+                <h1 class="empty-state__title">Import an image to get started</h1>
+                <p class="empty-state__description">
+                    Crop, resize, and adjust it right here.
+                </p>
                 <button type="button" class="import-button" @click="emit('import')">
                     <i class="bi bi-folder2-open" aria-hidden="true"></i>
                     <span>Import image</span>
@@ -219,26 +224,58 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
   color: var(--color-text-muted);
 }
 
-.empty-state > .bi,
 .status-message > .bi {
   font-size: 48px;
+}
+
+.empty-state {
+  width: min(100%, 440px);
+  padding: 36px 28px;
+  gap: 16px;
+  text-align: center;
+  background-color: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.empty-state__icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  color: var(--color-focus);
+  font-size: 30px;
+  background-color: rgb(96 165 250 / 12%);
+  border-radius: 16px;
+}
+
+.empty-state__title {
+  color: var(--color-text);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.empty-state__description {
+  max-width: 30ch;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .import-button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-top: 8px;
-  padding: 8px 16px;
+  padding: 10px 18px;
   color: #fff;
   background-color: var(--color-accent);
   border: 1px solid transparent;
   border-radius: 4px;
   cursor: pointer;
+  font-weight: 600;
 }
 
 .import-button:hover {
