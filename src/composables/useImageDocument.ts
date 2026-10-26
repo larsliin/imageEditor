@@ -10,6 +10,7 @@ import {
     decodeImageFile,
     downloadBlob,
     exportFileName,
+    exportFileNameFromBase,
     pickImageFile,
     renderToCanvas,
     resizeImageBitmap,
@@ -18,6 +19,7 @@ import {
     resolveExportMimeType,
     rotateImageBitmap,
     rotateCropImageBitmap,
+    type ExportMimeType,
 } from '@/lib/imageIO';
 
 export type DocumentStatus = 'idle' | 'loading' | 'processing' | 'exporting';
@@ -26,7 +28,7 @@ interface LoadedDocument {
     original: ImageBitmap
     bitmap: ImageBitmap
     fileName: string
-    mimeType: string
+    exportMimeType: ExportMimeType
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -41,6 +43,7 @@ export function useImageDocument() {
     const revision = shallowRef(0);
     const savedRevision = shallowRef(0);
     const savedFileName = shallowRef('');
+    const savedExportMimeType = shallowRef<ExportMimeType>('image/png');
     let nextRevision = 0;
     let disposed = false;
 
@@ -51,13 +54,16 @@ export function useImageDocument() {
                 fileName: current.value.fileName,
                 width: current.value.bitmap.width,
                 height: current.value.bitmap.height,
+                exportMimeType: current.value.exportMimeType,
             }
             : null,
     );
     const isBusy = computed(() => status.value !== 'idle');
     const isDirty = computed(() =>
         revision.value !== savedRevision.value
-    || (current.value !== null && current.value.fileName !== savedFileName.value),
+        || (current.value !== null
+            && (current.value.fileName !== savedFileName.value
+                || current.value.exportMimeType !== savedExportMimeType.value)),
     );
     const canReset = computed(() => current.value !== null && current.value.bitmap !== current.value.original);
 
@@ -82,11 +88,14 @@ export function useImageDocument() {
                 decoded.close();
                 return;
             }
-            replaceDocument({ original: decoded, bitmap: decoded, fileName: file.name, mimeType: file.type });
+            const exportMimeType = resolveExportMimeType(file.type);
+            const fileName = exportFileName(file.name, exportMimeType);
+            replaceDocument({ original: decoded, bitmap: decoded, fileName, exportMimeType });
             documentId.value += 1;
             revision.value = 0;
             savedRevision.value = 0;
-            savedFileName.value = file.name;
+            savedFileName.value = fileName;
+            savedExportMimeType.value = exportMimeType;
             nextRevision = 0;
         } catch (e) {
             error.value = errorMessage(e, 'The image could not be opened.');
@@ -256,7 +265,18 @@ export function useImageDocument() {
             error.value = 'Enter a filename.';
             return;
         }
-        current.value = { ...doc, fileName: name };
+        current.value = { ...doc, fileName: exportFileNameFromBase(name, doc.exportMimeType) };
+        error.value = null;
+    }
+
+    function setExportMimeType(mimeType: ExportMimeType) {
+        const doc = current.value;
+        if (!doc || isBusy.value || doc.exportMimeType === mimeType) return;
+        current.value = {
+            ...doc,
+            fileName: exportFileName(doc.fileName, mimeType),
+            exportMimeType: mimeType,
+        };
         error.value = null;
     }
 
@@ -267,12 +287,13 @@ export function useImageDocument() {
         status.value = 'exporting';
         error.value = null;
         try {
-            const mimeType = resolveExportMimeType(doc.mimeType);
+            const mimeType = doc.exportMimeType;
             const blob = await canvasToBlob(renderToCanvas(doc.bitmap), mimeType);
             if (disposed) return;
             downloadBlob(blob, exportFileName(doc.fileName, mimeType));
             savedRevision.value = revision.value;
             savedFileName.value = doc.fileName;
+            savedExportMimeType.value = mimeType;
         } catch (e) {
             error.value = errorMessage(e, 'The image could not be saved.');
         } finally {
@@ -314,6 +335,7 @@ export function useImageDocument() {
         curvesImage,
         resetImage,
         renameImage,
+        setExportMimeType,
         exportImage,
         dismissError,
     };

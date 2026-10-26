@@ -20,7 +20,7 @@
 </script>
 
 <template>
-    <nav class="toolbar" aria-label="Tools">
+    <nav class="tool-rail" aria-label="Editor tools">
         <div class="tool-group" role="group" aria-label="File">
             <button
                 type="button"
@@ -115,7 +115,7 @@
 </template>
 
 <style scoped>
-.toolbar {
+.tool-rail {
   display: flex;
   flex-direction: column;
   align-items: center;

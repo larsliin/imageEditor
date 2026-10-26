@@ -43,6 +43,10 @@ export function exportFileName(sourceFileName: string, mimeType: ExportMimeType)
     return `${baseName || 'image'}.${EXPORT_EXTENSIONS[mimeType]}`;
 }
 
+export function exportFileNameFromBase(baseName: string, mimeType: ExportMimeType): string {
+    return `${baseName}.${EXPORT_EXTENSIONS[mimeType]}`;
+}
+
 export function renderToCanvas(source: ImageBitmap): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
     canvas.width = source.width;

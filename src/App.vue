@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import EditorInfoBar from './components/editor/EditorInfoBar.vue';
-    import EditorToolbar from './components/editor/EditorToolbar.vue';
+    import EditorTopBar from './components/editor/EditorTopBar.vue';
+    import EditorToolRail from './components/editor/EditorToolRail.vue';
     import EditorCanvas from './components/editor/EditorCanvas.vue';
     import ZoomControls from './components/editor/ZoomControls.vue';
     import ResizeControls from './components/editor/ResizeControls.vue';
@@ -17,7 +17,7 @@
 
     const {
         bitmap, info, documentId, status, error, isBusy, importImage, exportImage, cropImage, rotateImage,
-        resizeImage, levelsImage, curvesImage, renameImage, dismissError,
+        resizeImage, levelsImage, curvesImage, renameImage, setExportMimeType, dismissError,
     }
         = useImageDocument();
 
@@ -69,9 +69,16 @@
 
 <template>
     <div class="editor">
-        <EditorInfoBar :key="documentId" class="editor__info" :image="info" :busy="isBusy" @rename="renameImage" />
-        <EditorToolbar
-            class="editor__toolbar"
+        <EditorTopBar
+            :key="documentId"
+            class="editor__top-bar"
+            :image="info"
+            :busy="isBusy"
+            @rename="renameImage"
+            @export-format-change="setExportMimeType"
+        />
+        <EditorToolRail
+            class="editor__tool-rail"
             :active-tool="activeTool"
             :has-image="bitmap !== null"
             :busy="isBusy"
@@ -105,7 +112,13 @@
             @cancel-crop="activeTool = null"
         >
             <template #overlay>
-                <ZoomControls :zoom="zoom" :is-fit="isFit" @fit="fitToView" @actual-size="actualSize" />
+                <ZoomControls
+                    :zoom="zoom"
+                    :is-fit="isFit"
+                    :image-size="imageSize"
+                    @fit="fitToView"
+                    @actual-size="actualSize"
+                />
             </template>
         </EditorCanvas>
         <ResizeControls
@@ -143,17 +156,17 @@
   grid-template-columns: auto 1fr;
   grid-template-rows: auto 1fr;
   grid-template-areas:
-    'info info'
-    'toolbar canvas';
+    'top-bar top-bar'
+    'tool-rail canvas';
   height: 100%;
 }
 
-.editor__info {
-  grid-area: info;
+.editor__top-bar {
+  grid-area: top-bar;
 }
 
-.editor__toolbar {
-  grid-area: toolbar;
+.editor__tool-rail {
+  grid-area: tool-rail;
 }
 
 .editor__canvas {

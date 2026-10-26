@@ -1,10 +1,12 @@
 <script setup lang="ts">
     import { computed } from 'vue';
     import { formatZoom } from '@/lib/zoom';
+    import type { Size } from '@/lib/zoom';
 
     const props = defineProps<{
         zoom: number
         isFit: boolean
+        imageSize: Size | null
     }>();
 
     const emit = defineEmits<{
@@ -44,6 +46,14 @@
         >
             <i class="bi bi-1-square" aria-hidden="true"></i>
         </button>
+        <output
+            v-if="imageSize"
+            class="image-dimensions"
+            :aria-label="`Image dimensions: ${imageSize.width} pixels wide by ${imageSize.height} pixels high`"
+            :title="`Image dimensions: ${imageSize.width} × ${imageSize.height} px`"
+        >
+            {{ imageSize.width }} × {{ imageSize.height }} px
+        </output>
     </div>
 </template>
 
@@ -67,9 +77,16 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  min-width: 64px;
   padding: 0 6px;
   font-variant-numeric: tabular-nums;
+}
+
+.image-dimensions {
+  padding: 0 6px;
+  border-left: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .zoom-button {

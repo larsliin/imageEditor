@@ -1,3 +1,5 @@
+import type { ExportMimeType } from '@/lib/imageIO';
+
 export type ToolId = 'crop' | 'resize' | 'levels' | 'curves' | 'pan';
 
 export interface ToolDefinition {
@@ -10,6 +12,7 @@ export interface ImageInfo {
     fileName: string
     width: number
     height: number
+    exportMimeType: ExportMimeType
 }
 
 export const EDIT_TOOLS: readonly ToolDefinition[] = [

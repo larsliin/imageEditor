@@ -1,10 +1,16 @@
 import { computed, onScopeDispose, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue';
 
+const NON_TEXT_INPUT_TYPES = ['button', 'checkbox', 'radio', 'range', 'reset', 'submit'];
+
 function isTextInput(target: EventTarget | null): boolean {
-    return (
-        target instanceof HTMLElement
-    && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
-    );
+    if (!(target instanceof HTMLElement)) return false;
+    if (target instanceof HTMLInputElement) return !NON_TEXT_INPUT_TYPES.includes(target.type);
+    return target.isContentEditable || ['TEXTAREA', 'SELECT'].includes(target.tagName);
+}
+
+// Buttons, checkboxes, etc. that Space would otherwise activate.
+function isControl(target: EventTarget | null): boolean {
+    return target instanceof HTMLButtonElement || target instanceof HTMLInputElement;
 }
 
 /**
@@ -55,22 +61,36 @@ export function usePan(
         isDragging.value = false;
     }
 
+    // Tracks whether focus last moved via pointer (true) or Tab navigation (false).
+    let focusedByPointer = false;
+
+    function onAnyPointerDown() {
+        focusedByPointer = true;
+    }
+
     function onKeyDown(event: KeyboardEvent) {
-        if (event.code !== 'Space' || isTextInput(event.target)) return;
-        // Let Space still activate focused buttons; otherwise suppress page scrolling.
-        if (event.target instanceof HTMLButtonElement) return;
+        if (event.code !== 'Space') {
+            if (event.key === 'Tab') focusedByPointer = false;
+            return;
+        }
+        if (isTextInput(event.target)) return;
+        if (!isSpaceHeld.value && isControl(event.target) && !focusedByPointer) return;
+        // Suppress page scrolling and click activation of mouse-focused controls.
         event.preventDefault();
         isSpaceHeld.value = true;
     }
 
     function onKeyUp(event: KeyboardEvent) {
-        if (event.code === 'Space') isSpaceHeld.value = false;
+        if (event.code !== 'Space' || !isSpaceHeld.value) return;
+        event.preventDefault();
+        isSpaceHeld.value = false;
     }
 
     function onBlur() {
         isSpaceHeld.value = false;
     }
 
+    window.addEventListener('pointerdown', onAnyPointerDown, true);
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
     window.addEventListener('blur', onBlur);
@@ -91,6 +111,7 @@ export function usePan(
     );
 
     onScopeDispose(() => {
+        window.removeEventListener('pointerdown', onAnyPointerDown, true);
         window.removeEventListener('keydown', onKeyDown);
         window.removeEventListener('keyup', onKeyUp);
         window.removeEventListener('blur', onBlur);
