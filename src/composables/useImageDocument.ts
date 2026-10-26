@@ -4,6 +4,7 @@ import { isCropInsideRotatedImage, isValidAngle, isValidCrop, type CropRect } fr
 import { MAX_RESIZE_DIMENSION, isValidResize } from '@/lib/resize';
 import { isIdentityLevels, isValidLevels, type LevelsParams } from '@/lib/levels';
 import { isIdentityCurves, isValidCurves, type CurvesParams } from '@/lib/curves';
+import type { ColorMode } from '@/lib/colorMode';
 import type { Size } from '@/lib/zoom';
 import {
     canvasToBlob,
@@ -16,6 +17,7 @@ import {
     resizeImageBitmap,
     levelsImageBitmap,
     curvesImageBitmap,
+    colorModeImageBitmap,
     resolveExportMimeType,
     rotateImageBitmap,
     rotateCropImageBitmap,
@@ -31,6 +33,13 @@ interface LoadedDocument {
     exportMimeType: ExportMimeType
 }
 
+interface HistoryEntry {
+    document: LoadedDocument
+    revision: number
+}
+
+const HISTORY_LIMIT = 3;
+
 function errorMessage(error: unknown, fallback: string): string {
     return error instanceof Error ? error.message : fallback;
 }
@@ -44,6 +53,8 @@ export function useImageDocument() {
     const savedRevision = shallowRef(0);
     const savedFileName = shallowRef('');
     const savedExportMimeType = shallowRef<ExportMimeType>('image/png');
+    const undoHistory = shallowRef<HistoryEntry[]>([]);
+    const redoHistory = shallowRef<HistoryEntry[]>([]);
     let nextRevision = 0;
     let disposed = false;
 
@@ -66,11 +77,64 @@ export function useImageDocument() {
                 || current.value.exportMimeType !== savedExportMimeType.value)),
     );
     const canReset = computed(() => current.value !== null && current.value.bitmap !== current.value.original);
+    const canUndo = computed(() => current.value !== null && !isBusy.value && undoHistory.value.length > 0);
+    const canRedo = computed(() => current.value !== null && !isBusy.value && redoHistory.value.length > 0);
+
+    function retainedBitmaps(): Set<ImageBitmap> {
+        const bitmaps = new Set<ImageBitmap>();
+        if (current.value) {
+            bitmaps.add(current.value.original);
+            bitmaps.add(current.value.bitmap);
+        }
+        for (const entry of [...undoHistory.value, ...redoHistory.value]) {
+            bitmaps.add(entry.document.bitmap);
+        }
+        return bitmaps;
+    }
+
+    function commitEdit(next: LoadedDocument, nextStateRevision = ++nextRevision) {
+        const doc = current.value;
+        if (!doc) return;
+        const previousBitmaps = retainedBitmaps();
+        undoHistory.value = [...undoHistory.value, { document: doc, revision: revision.value }].slice(-HISTORY_LIMIT);
+        redoHistory.value = [];
+        current.value = next;
+        revision.value = nextStateRevision;
+        const retained = retainedBitmaps();
+        for (const previous of previousBitmaps) {
+            if (!retained.has(previous)) previous.close();
+        }
+        error.value = null;
+    }
+
+    function undo() {
+        if (!canUndo.value) return;
+        const doc = current.value;
+        const entry = undoHistory.value.at(-1);
+        if (!doc || !entry) return;
+        redoHistory.value = [...redoHistory.value, { document: doc, revision: revision.value }];
+        undoHistory.value = undoHistory.value.slice(0, -1);
+        current.value = entry.document;
+        revision.value = entry.revision;
+        error.value = null;
+    }
+
+    function redo() {
+        if (!canRedo.value) return;
+        const doc = current.value;
+        const entry = redoHistory.value.at(-1);
+        if (!doc || !entry) return;
+        undoHistory.value = [...undoHistory.value, { document: doc, revision: revision.value }];
+        redoHistory.value = redoHistory.value.slice(0, -1);
+        current.value = entry.document;
+        revision.value = entry.revision;
+        error.value = null;
+    }
 
     function replaceDocument(next: LoadedDocument | null) {
-        const previous = current.value;
-        if (previous?.bitmap !== previous?.original) previous?.bitmap.close();
-        previous?.original.close();
+        for (const previous of retainedBitmaps()) previous.close();
+        undoHistory.value = [];
+        redoHistory.value = [];
         current.value = next;
     }
 
@@ -128,9 +192,7 @@ export function useImageDocument() {
                 cropped.close();
                 return false;
             }
-            if (doc.bitmap !== doc.original) doc.bitmap.close();
-            current.value = { ...doc, bitmap: cropped };
-            revision.value = ++nextRevision;
+            commitEdit({ ...doc, bitmap: cropped });
             return true;
         } catch (e) {
             error.value = errorMessage(e, 'The image could not be cropped.');
@@ -151,9 +213,7 @@ export function useImageDocument() {
                 rotated.close();
                 return false;
             }
-            if (doc.bitmap !== doc.original) doc.bitmap.close();
-            current.value = { ...doc, bitmap: rotated };
-            revision.value = ++nextRevision;
+            commitEdit({ ...doc, bitmap: rotated });
             return true;
         } catch (e) {
             error.value = errorMessage(e, 'The image could not be rotated.');
@@ -179,9 +239,7 @@ export function useImageDocument() {
                 resized.close();
                 return false;
             }
-            if (doc.bitmap !== doc.original) doc.bitmap.close();
-            current.value = { ...doc, bitmap: resized };
-            revision.value = ++nextRevision;
+            commitEdit({ ...doc, bitmap: resized });
             return true;
         } catch (e) {
             error.value = errorMessage(e, 'The image could not be resized. It may be too large for this browser.');
@@ -207,9 +265,7 @@ export function useImageDocument() {
                 adjusted.close();
                 return false;
             }
-            if (doc.bitmap !== doc.original) doc.bitmap.close();
-            current.value = { ...doc, bitmap: adjusted };
-            revision.value = ++nextRevision;
+            commitEdit({ ...doc, bitmap: adjusted });
             return true;
         } catch (e) {
             error.value = errorMessage(e, 'The levels could not be applied.');
@@ -235,12 +291,37 @@ export function useImageDocument() {
                 adjusted.close();
                 return false;
             }
-            if (doc.bitmap !== doc.original) doc.bitmap.close();
-            current.value = { ...doc, bitmap: adjusted };
-            revision.value = ++nextRevision;
+            commitEdit({ ...doc, bitmap: adjusted });
             return true;
         } catch (e) {
             error.value = errorMessage(e, 'The curves could not be applied.');
+            return false;
+        } finally {
+            status.value = 'idle';
+        }
+    }
+
+    async function colorModeImage(mode: ColorMode): Promise<boolean> {
+        const doc = current.value;
+        if (!doc || isBusy.value) return false;
+        status.value = 'processing';
+        error.value = null;
+        try {
+            const converted = await colorModeImageBitmap(doc.bitmap, mode);
+            if (disposed) {
+                converted.close();
+                return false;
+            }
+            const exportMimeType: ExportMimeType = mode === 'bitmap' ? 'image/bmp' : doc.exportMimeType;
+            commitEdit({
+                ...doc,
+                bitmap: converted,
+                exportMimeType,
+                fileName: exportFileName(doc.fileName, exportMimeType),
+            });
+            return true;
+        } catch (e) {
+            error.value = errorMessage(e, 'The color mode could not be changed.');
             return false;
         } finally {
             status.value = 'idle';
@@ -251,10 +332,7 @@ export function useImageDocument() {
         const doc = current.value;
         if (!doc || !canReset.value || isBusy.value) return;
         if (!window.confirm('Reset all edits to the original image?')) return;
-        doc.bitmap.close();
-        current.value = { ...doc, bitmap: doc.original };
-        revision.value = 0;
-        error.value = null;
+        commitEdit({ ...doc, bitmap: doc.original }, 0);
     }
 
     function renameImage(fileName: string) {
@@ -265,19 +343,19 @@ export function useImageDocument() {
             error.value = 'Enter a filename.';
             return;
         }
-        current.value = { ...doc, fileName: exportFileNameFromBase(name, doc.exportMimeType) };
-        error.value = null;
+        const nextFileName = exportFileNameFromBase(name, doc.exportMimeType);
+        if (nextFileName === doc.fileName) return;
+        commitEdit({ ...doc, fileName: nextFileName }, revision.value);
     }
 
     function setExportMimeType(mimeType: ExportMimeType) {
         const doc = current.value;
         if (!doc || isBusy.value || doc.exportMimeType === mimeType) return;
-        current.value = {
+        commitEdit({
             ...doc,
             fileName: exportFileName(doc.fileName, mimeType),
             exportMimeType: mimeType,
-        };
-        error.value = null;
+        }, revision.value);
     }
 
     async function exportImage() {
@@ -327,12 +405,17 @@ export function useImageDocument() {
         isBusy,
         isDirty,
         canReset,
+        canUndo,
+        canRedo,
+        undo,
+        redo,
         importImage,
         cropImage,
         rotateImage,
         resizeImage,
         levelsImage,
         curvesImage,
+        colorModeImage,
         resetImage,
         renameImage,
         setExportMimeType,

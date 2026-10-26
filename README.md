@@ -43,6 +43,10 @@ reliable image-preview, import, and export workflow.
   matching the export format. Renaming does not change the source file, and
   resetting image edits keeps the chosen name.
 - **Reset to original** to discard edits and restore the imported image.
+- **Undo and redo** from the left toolbar. History keeps only the last three
+  applied edits, including reset, filename, and export-format changes. Unapplied
+  previews do not count. A new edit after undo clears redo; opening another image
+  clears all history. Discarded history bitmaps are released to limit memory use.
 - **Unsaved-edit protection** warns before opening another image or leaving the
   page if edits have not been downloaded. The browser cannot confirm whether a
   download finishes.
@@ -77,6 +81,12 @@ Run the crop-coordinate and zoom tests with Node.js 22.18 or later:
 
 ```sh
 node --test src/lib/__tests__/crop.test.ts src/lib/__tests__/zoom.test.ts src/lib/__tests__/useZoom.test.ts
+```
+
+Run the bounded undo/redo history and bitmap-lifecycle regression tests:
+
+```sh
+node --test src/lib/__tests__/useImageDocument.test.ts
 ```
 
 ## Tech stack

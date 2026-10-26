@@ -6,6 +6,7 @@
     import type { CropRect } from '@/lib/crop';
     import { applyLevelsToPixels, type LevelsParams } from '@/lib/levels';
     import { applyCurvesToPixels, type CurvesParams } from '@/lib/curves';
+    import { applyColorModeToPixels, type ColorMode } from '@/lib/colorMode';
 
     const props = defineProps<{
         bitmap: ImageBitmap | null
@@ -17,6 +18,7 @@
         error: string | null
         levelsPreview?: LevelsParams | null
         curvesPreview?: CurvesParams | null
+        colorModePreview?: ColorMode | null
     }>();
 
     const emit = defineEmits<{
@@ -134,8 +136,8 @@
     );
 
     watch(
-        [() => props.bitmap, canvasRef, () => props.levelsPreview, () => props.curvesPreview],
-        ([bitmap, canvas, levels, curves]) => {
+        [() => props.bitmap, canvasRef, () => props.levelsPreview, () => props.curvesPreview, () => props.colorModePreview],
+        ([bitmap, canvas, levels, curves, colorMode]) => {
             if (!bitmap || !canvas) return;
             if (canvas.width !== bitmap.width || canvas.height !== bitmap.height) {
                 canvas.width = bitmap.width;
@@ -145,10 +147,11 @@
             if (!context) return;
             context.clearRect(0, 0, canvas.width, canvas.height);
             context.drawImage(bitmap, 0, 0);
-            if (!levels && !curves) return;
+            if (!levels && !curves && !colorMode) return;
             const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
             if (levels) applyLevelsToPixels(imageData.data, levels);
             if (curves) applyCurvesToPixels(imageData.data, curves);
+            if (colorMode) applyColorModeToPixels(imageData.data, colorMode);
             context.putImageData(imageData, 0, 0);
         },
         { flush: 'post' },

@@ -39,7 +39,7 @@
         if (!isEditing.value) return;
         if (!cancel) {
             const input = filenameInput.value;
-            const name = draftName.value.trim().replace(/\.(?:jpe?g|png)$/i, '');
+            const name = draftName.value.trim().replace(/\.(?:jpe?g|png|bmp)$/i, '');
             input?.setCustomValidity(name ? '' : 'Enter a filename without an extension.');
             if (input && !input.reportValidity()) return;
             emit('rename', name);
@@ -54,7 +54,7 @@
     function updateExportFormat(event: Event) {
         const select = event.currentTarget;
         if (!(select instanceof HTMLSelectElement)) return;
-        if (select.value === 'image/jpeg' || select.value === 'image/png') {
+        if (select.value === 'image/jpeg' || select.value === 'image/png' || select.value === 'image/bmp') {
             emit('export-format-change', select.value);
         }
     }
@@ -94,6 +94,7 @@
                     >
                         <option value="image/jpeg">JPG</option>
                         <option value="image/png">PNG</option>
+                        <option value="image/bmp">BMP</option>
                     </select>
                 </dd>
             </div>
@@ -158,8 +159,8 @@
   field-sizing: content;
   min-width: 1.5rem;
   max-width: min(18rem, 40vw);
-  height: 30px;
-  padding: 4px 0 4px 4px;
+  height: 22px;
+  padding: 4px 0 4px 1px;
   border: 1px solid var(--color-border);
   border-radius: 3px;
   font: inherit;

@@ -1,5 +1,8 @@
 <script setup lang="ts">
     import { EDIT_TOOLS, PAN_TOOL, type ToolId } from '@/types/editor';
+    import UndoIcon from '@/components/icons/UndoIcon.vue';
+    import RedoIcon from '@/components/icons/RedoIcon.vue';
+    import CurvesIcon from '@/components/icons/CurvesIcon.vue';
 
     defineProps<{
         activeTool: ToolId | null
@@ -7,6 +10,8 @@
         busy: boolean
         canZoomIn: boolean
         canZoomOut: boolean
+        canUndo: boolean
+        canRedo: boolean
     }>();
 
     const emit = defineEmits<{
@@ -16,6 +21,8 @@
         'select-tool': [tool: ToolId]
         'zoom-in': []
         'zoom-out': []
+        undo: []
+        redo: []
     }>();
 </script>
 
@@ -46,6 +53,31 @@
 
         <hr class="separator" />
 
+        <div class="tool-group" role="group" aria-label="Edit history">
+            <button
+                type="button"
+                class="tool-button"
+                aria-label="Undo"
+                title="Undo last edit (up to 3 edits)"
+                :disabled="!hasImage || busy || !canUndo"
+                @click="emit('undo')"
+            >
+                <UndoIcon />
+            </button>
+            <button
+                type="button"
+                class="tool-button"
+                aria-label="Redo"
+                title="Redo last undone edit"
+                :disabled="!hasImage || busy || !canRedo"
+                @click="emit('redo')"
+            >
+                <RedoIcon />
+            </button>
+        </div>
+
+        <hr class="separator" />
+
         <div class="tool-group" role="group" aria-label="Edit tools">
             <template v-for="tool in EDIT_TOOLS" :key="tool.id">
                 <button
@@ -58,7 +90,8 @@
                     :disabled="!hasImage || busy"
                     @click="emit('select-tool', tool.id)"
                 >
-                    <i class="bi" :class="tool.icon" aria-hidden="true"></i>
+                    <CurvesIcon v-if="tool.id === 'curves'" />
+                    <i v-else class="bi" :class="tool.icon" aria-hidden="true"></i>
                 </button>
                 <button
                     v-if="tool.id === 'resize'"

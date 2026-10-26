@@ -14,10 +14,13 @@
     import type { LevelsParams } from './lib/levels';
     import CurvesControls from './components/editor/CurvesControls.vue';
     import type { CurvesParams } from './lib/curves';
+    import ColorModeControls from './components/editor/ColorModeControls.vue';
+    import type { ColorMode } from './lib/colorMode';
 
     const {
         bitmap, info, documentId, status, error, isBusy, importImage, exportImage, cropImage, rotateImage,
-        resizeImage, levelsImage, curvesImage, renameImage, setExportMimeType, dismissError,
+        resizeImage, levelsImage, curvesImage, colorModeImage, renameImage, setExportMimeType, dismissError,
+        canUndo, canRedo, undo, redo,
     }
         = useImageDocument();
 
@@ -52,14 +55,20 @@
 
     const levelsPreview = ref<LevelsParams | null>(null);
     const curvesPreview = ref<CurvesParams | null>(null);
+    const colorModePreview = ref<ColorMode | null>(null);
 
     async function applyCurves(curves: CurvesParams) {
         if (await curvesImage(curves)) activeTool.value = null;
     }
 
+    async function applyColorMode(mode: ColorMode) {
+        if (await colorModeImage(mode)) activeTool.value = null;
+    }
+
     watch(activeTool, () => {
         levelsPreview.value = null;
         curvesPreview.value = null;
+        colorModePreview.value = null;
     });
 
     watch(bitmap, () => {
@@ -84,12 +93,16 @@
             :busy="isBusy"
             :can-zoom-in="canZoomIn"
             :can-zoom-out="canZoomOut"
+            :can-undo="canUndo"
+            :can-redo="canRedo"
             @select-tool="selectTool"
             @import="importImage"
             @export="exportImage"
             @rotate-image="rotateImage"
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
+            @undo="undo"
+            @redo="redo"
         />
         <EditorCanvas
             :key="documentId"
@@ -103,6 +116,7 @@
             :error="error"
             :levels-preview="levelsPreview"
             :curves-preview="curvesPreview"
+            :color-mode-preview="colorModePreview"
             @import="importImage"
             @dismiss-error="dismissError"
             @viewport-resize="viewportSize = $event"
@@ -146,6 +160,14 @@
             :error="error"
             @preview="curvesPreview = $event"
             @apply="applyCurves"
+            @cancel="activeTool = null"
+        />
+        <ColorModeControls
+            v-if="activeTool === 'color-mode' && bitmap"
+            :disabled="isBusy"
+            :error="error"
+            @preview="colorModePreview = $event"
+            @apply="applyColorMode"
             @cancel="activeTool = null"
         />
     </div>

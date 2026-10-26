@@ -1,6 +1,6 @@
 import type { ExportMimeType } from '@/lib/imageIO';
 
-export type ToolId = 'crop' | 'resize' | 'levels' | 'curves' | 'pan';
+export type ToolId = 'crop' | 'resize' | 'levels' | 'curves' | 'color-mode' | 'pan';
 
 export interface ToolDefinition {
     id: ToolId
@@ -20,6 +20,7 @@ export const EDIT_TOOLS: readonly ToolDefinition[] = [
     { id: 'resize', label: 'Resize', icon: 'bi-arrows-angle-expand' },
     { id: 'levels', label: 'Levels', icon: 'bi-shadows' },
     { id: 'curves', label: 'Curves', icon: 'bi-bezier' },
+    { id: 'color-mode', label: 'Color mode', icon: 'bi-circle-half' },
 ];
 
 export const PAN_TOOL: ToolDefinition = { id: 'pan', label: 'Pan', icon: 'bi-arrows-move' };
