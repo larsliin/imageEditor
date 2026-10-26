@@ -44,6 +44,7 @@
     const graph = useTemplateRef<SVGSVGElement>('graph');
     const idPrefix = useId();
     let dragIndex: number | null = null;
+    let dragPointerId: number | null = null;
 
     const points = computed(() => curves.value[channel.value]);
     const valid = computed(() => isValidCurves(curves.value));
@@ -98,18 +99,19 @@
         { deep: true },
     );
 
-    function pointerToCurve(event: PointerEvent): { x: number, y: number } {
+    function pointerToCurve(event: PointerEvent): { x: number, y: number } | null {
         const rect = graph.value?.getBoundingClientRect();
-        if (!rect || rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
+        if (!rect || rect.width === 0 || rect.height === 0) return null;
         const x = ((event.clientX - rect.left) / rect.width) * VIEW - PAD;
         const y = CURVE_MAX - (((event.clientY - rect.top) / rect.height) * VIEW - PAD);
         return { x: Math.round(x), y: Math.round(y) };
     }
 
     function onPointerDown(event: PointerEvent) {
-        if (props.disabled) return;
+        if (props.disabled || dragPointerId !== null || !graph.value) return;
         const target = pointerToCurve(event);
-        const rect = graph.value!.getBoundingClientRect();
+        if (!target) return;
+        const rect = graph.value.getBoundingClientRect();
         const unitsPerPixel = VIEW / rect.width;
         let nearest = -1;
         let nearestDistance = Infinity;
@@ -124,25 +126,31 @@
             ? nearest
             : insertPoint(points.value, target.x, target.y);
         selected.value = dragIndex;
-        graph.value!.setPointerCapture(event.pointerId);
+        dragPointerId = event.pointerId;
+        graph.value.setPointerCapture(event.pointerId);
     }
 
     function onPointerMove(event: PointerEvent) {
-        if (dragIndex === null) return;
+        if (props.disabled || dragPointerId !== event.pointerId || dragIndex === null) return;
         const target = pointerToCurve(event);
+        if (!target) return;
         movePoint(points.value, dragIndex, target.x, target.y);
     }
 
     function onPointerUp(event: PointerEvent) {
+        if (dragPointerId !== event.pointerId) return;
         dragIndex = null;
+        dragPointerId = null;
         if (graph.value?.hasPointerCapture(event.pointerId)) graph.value.releasePointerCapture(event.pointerId);
     }
 
     function remove(index: number) {
+        if (props.disabled) return;
         if (removePoint(points.value, index)) selected.value = Math.min(index, points.value.length - 1);
     }
 
     function onKeyDown(index: number, event: KeyboardEvent) {
+        if (props.disabled) return;
         const point = points.value[index];
         if (!point) return;
         if (event.key === 'Delete' || event.key === 'Backspace') {
@@ -215,6 +223,7 @@
                 @pointermove="onPointerMove"
                 @pointerup="onPointerUp"
                 @pointercancel="onPointerUp"
+                @lostpointercapture="onPointerUp"
             >
                 <rect :x="PAD" :y="PAD" :width="CURVE_MAX" :height="CURVE_MAX" class="graph__bg" />
                 <path v-if="histogramPath" :d="histogramPath" class="graph__histogram" />
