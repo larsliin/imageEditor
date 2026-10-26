@@ -121,7 +121,15 @@
   place-items: center;
   width: 34px;
   padding: 0;
+  background: var(--color-button-secondary);
+  border-color: var(--color-button-secondary-border);
+  border-radius: var(--radius-button);
   cursor: pointer;
+}
+
+.lock-button:hover:not(:disabled) {
+  background: var(--color-button-secondary-hover);
+  border-color: var(--color-button-secondary-border-hover);
 }
 
 .lock-button[aria-pressed='true'] {
@@ -129,7 +137,7 @@
 }
 
 .lock-button:disabled {
-  opacity: 0.4;
+  opacity: var(--opacity-button-secondary-disabled);
   cursor: not-allowed;
 }
 

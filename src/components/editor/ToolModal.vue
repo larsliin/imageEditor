@@ -136,9 +136,9 @@
 .tool-modal__button {
   min-height: 34px;
   padding: 6px 12px;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
+  background: var(--color-button-secondary);
+  border: 1px solid var(--color-button-secondary-border);
+  border-radius: var(--radius-button);
   cursor: pointer;
 }
 
@@ -152,9 +152,19 @@
   filter: brightness(1.15);
 }
 
+.tool-modal__button:not(.tool-modal__button--apply):hover:not(:disabled) {
+  background: var(--color-button-secondary-hover);
+  border-color: var(--color-button-secondary-border-hover);
+  filter: none;
+}
+
 .tool-modal__button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.tool-modal__button:not(.tool-modal__button--apply):disabled {
+  opacity: var(--opacity-button-secondary-disabled);
 }
 
 .tool-modal__button:focus-visible {

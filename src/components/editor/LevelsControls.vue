@@ -376,14 +376,19 @@
   min-height: 30px;
   padding: 4px 10px;
   color: var(--color-text);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 3px;
+  background: var(--color-button-secondary);
+  border: 1px solid var(--color-button-secondary-border);
+  border-radius: var(--radius-button);
   cursor: pointer;
 }
 
+.reset-button:hover:not(:disabled) {
+  background: var(--color-button-secondary-hover);
+  border-color: var(--color-button-secondary-border-hover);
+}
+
 .reset-button:disabled {
-  opacity: 0.4;
+  opacity: var(--opacity-button-secondary-disabled);
   cursor: not-allowed;
 }
 
