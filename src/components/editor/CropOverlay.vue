@@ -64,7 +64,7 @@
         if (maxHeight >= 1 && height > maxHeight) crop.value.height = maxHeight;
     });
 
-    // While the crop is untouched by the user, it follows the largest safe crop for the current angle.
+    // Automatic crops follow the current angle until the user adjusts the selection.
     let autoCrop = true;
 
     watch(angle, (value) => {
@@ -74,6 +74,7 @@
             return;
         }
         if (rectValid.value && !isCropInsideRotatedImage(crop.value, props.image, value)) {
+            autoCrop = true;
             crop.value = largestCropInsideRotatedImage(props.image, value);
         }
     });
@@ -255,6 +256,7 @@
                     <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Invalid crop or angle
                 </p>
                 <div class="crop-actions">
+                    <span class="crop-divider" role="separator" aria-orientation="vertical"></span>
                     <button type="submit" :disabled="!valid || unchanged">Apply crop</button>
                     <button type="button" @click="emit('cancel')">Cancel</button>
                 </div>
@@ -265,244 +267,245 @@
 
 <style scoped>
 .crop-surface {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  cursor: crosshair;
-  touch-action: none;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    cursor: crosshair;
+    touch-action: none;
 }
 
 .crop-surface.is-panning {
-  cursor: inherit;
+    cursor: inherit;
 }
 
 .crop-selection {
-  position: absolute;
-  border: 1px solid #fff;
-  outline: 1px solid #000;
-  box-shadow: 0 0 0 100vmax rgb(0 0 0 / 55%);
-  pointer-events: none;
+    position: absolute;
+    border: 1px solid #fff;
+    outline: 1px solid #000;
+    box-shadow: 0 0 0 100vmax rgb(0 0 0 / 55%);
+    pointer-events: none;
 }
 
 .crop-selection.is-movable {
-  pointer-events: auto;
-  cursor: move;
+    pointer-events: auto;
+    cursor: move;
 }
 
 .crop-surface.is-moving {
-  cursor: move;
+    cursor: move;
 }
 
 .crop-grid {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
 }
 
 .crop-handle {
-  position: absolute;
-  z-index: 1;
-  width: 12px;
-  height: 12px;
-  padding: 0;
-  border: 1px solid #000;
-  border-radius: 1px;
-  background: #fff;
-  pointer-events: auto;
-  touch-action: none;
-  transform: translate(-50%, -50%);
+    position: absolute;
+    z-index: 1;
+    width: 12px;
+    height: 12px;
+    padding: 0;
+    border: 1px solid #000;
+    border-radius: 1px;
+    background: #fff;
+    pointer-events: auto;
+    touch-action: none;
+    transform: translate(-50%, -50%);
 }
 
 .crop-grid::before,
 .crop-grid::after {
-  content: '';
-  position: absolute;
-  border: 0 solid rgb(255 255 255 / 60%);
+    content: '';
+    position: absolute;
+    border: 0 solid rgb(255 255 255 / 60%);
 }
 
 .crop-grid::before {
-  inset: 0 33.333333%;
-  border-left-width: 1px;
-  border-right-width: 1px;
+    inset: 0 33.333333%;
+    border-left-width: 1px;
+    border-right-width: 1px;
 }
 
 .crop-grid::after {
-  inset: 33.333333% 0;
-  border-top-width: 1px;
-  border-bottom-width: 1px;
+    inset: 33.333333% 0;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
 }
 
 .crop-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: fit-content;
-  max-width: 100%;
-  box-sizing: border-box;
-  padding: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 4px 0;
 }
 
 .crop-error {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 0 auto;
-  font-size: 12px;
-  color: #ffa3a3;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 0 auto;
+    font-size: 12px;
+    color: #ffa3a3;
 }
 
 .crop-error + .crop-actions {
-  margin-left: 0;
+    margin-left: 0;
 }
 
 fieldset {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  padding: 0;
-  border: 0;
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
 }
 
 .crop-fields {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .crop-divider {
-  height: 24px;
-  border-left: 1px solid var(--color-border);
+    height: 24px;
+    border-left: 1px solid var(--color-border);
 }
 
 .crop-actions {
-  display: flex;
-  gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
 }
 
 input,
 button {
-  height: 30px;
-  padding: 4px 8px;
-  color: var(--color-text);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 3px;
-  font: inherit;
+    height: 30px;
+    padding: 4px 8px;
+    color: var(--color-text);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 3px;
+    font: inherit;
 }
 
 input[type='range'] {
-  appearance: none;
-  width: 140px;
-  padding: 0;
-  background: transparent;
-  border: 0;
+    appearance: none;
+    width: 140px;
+    padding: 0;
+    background: transparent;
+    border: 0;
 }
 
 .crop-angle-range::-webkit-slider-runnable-track {
-  height: 4px;
-  background: var(--color-border);
-  border-radius: 2px;
+    height: 4px;
+    background: var(--color-border);
+    border-radius: 2px;
 }
 
 .crop-angle-range::-moz-range-track,
 .crop-angle-range::-moz-range-progress {
-  height: 4px;
-  background: var(--color-border);
-  border-radius: 2px;
+    height: 4px;
+    background: var(--color-border);
+    border-radius: 2px;
 }
 
 .crop-angle-range::-webkit-slider-thumb {
-  appearance: none;
-  width: 14px;
-  height: 14px;
-  margin-top: -5px;
-  background: var(--color-text);
-  border: 0;
-  border-radius: 50%;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    margin-top: -5px;
+    background: var(--color-text);
+    border: 0;
+    border-radius: 50%;
 }
 
 .crop-angle-range::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  background: var(--color-text);
-  border: 0;
-  border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    background: var(--color-text);
+    border: 0;
+    border-radius: 50%;
 }
 
 input[type='number'] {
-  width: 78px;
+    width: 78px;
 }
 
 button {
-  cursor: pointer;
+    cursor: pointer;
 }
 
 .crop-controls button {
-  border-radius: var(--radius-button);
+    border-radius: var(--radius-button);
 }
 
 .crop-controls button[type='button'] {
-  background: var(--color-button-secondary);
-  border-color: var(--color-button-secondary-border);
+    background: var(--color-button-secondary);
+    border-color: var(--color-button-secondary-border);
 }
 
 .crop-controls button[type='button']:hover:not(:disabled) {
-  background: var(--color-button-secondary-hover);
-  border-color: var(--color-button-secondary-border-hover);
+    background: var(--color-button-secondary-hover);
+    border-color: var(--color-button-secondary-border-hover);
 }
 
 .icon-button {
-  width: 30px;
-  padding: 0;
+    width: 30px;
+    padding: 0;
 }
 
 button[type='submit'] {
-  background: var(--color-accent);
-  color: #fff;
+    background: var(--color-accent);
+    color: #fff;
 }
 
 @media (max-width: 1400px) {
-  .crop-angle-slider {
-    display: none;
-  }
+    .crop-angle-slider {
+        display: none;
+    }
 
-  .crop-controls,
-  fieldset,
-  .crop-fields {
-    flex-wrap: wrap;
-  }
+    .crop-controls,
+    fieldset,
+    .crop-fields {
+        flex-wrap: wrap;
+    }
 
-  input[type='number'] {
-    width: 60px;
-  }
+    input[type='number'] {
+        width: 60px;
+    }
 }
 
 button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 .crop-controls button[type='button']:disabled {
-  opacity: var(--opacity-button-secondary-disabled);
+    opacity: var(--opacity-button-secondary-disabled);
 }
 
 input:focus-visible {
-  outline: 1px solid var(--color-focus);
-  outline-offset: 0;
+    outline: 1px solid var(--color-focus);
+    outline-offset: 0;
 }
 
 button:focus-visible,
 .crop-surface:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: -2px;
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
 }
 </style>

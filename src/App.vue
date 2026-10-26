@@ -175,54 +175,54 @@
 
 <style scoped>
 .editor {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-rows: auto 1fr;
-  grid-template-areas:
-    'top-bar top-bar'
-    'tool-rail canvas';
-  height: 100%;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+        'top-bar top-bar'
+        'tool-rail canvas';
+    height: 100%;
 }
 
 .editor__top-bar {
-  grid-area: top-bar;
+    grid-area: top-bar;
 }
 
 .editor__tool-rail {
-  grid-area: tool-rail;
+    grid-area: tool-rail;
 }
 
 .editor__canvas {
-  grid-area: canvas;
+    grid-area: canvas;
 }
 
 .floating-tool-controls {
-  position: fixed;
-  top: 60px;
-  right: 12px;
-  left: 61px;
-  z-index: 20;
-  display: flex;
-  width: fit-content;
-  max-width: calc(100vw - 85px);
-  box-sizing: border-box;
-  margin-inline: auto;
-  padding: 6px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background-color: var(--color-panel);
-  box-shadow: 0 4px 16px rgb(0 0 0 / 40%);
+    position: fixed;
+    top: 60px;
+    right: 12px;
+    left: 61px;
+    z-index: 20;
+    display: flex;
+    width: fit-content;
+    max-width: calc(100vw - 85px);
+    box-sizing: border-box;
+    margin-inline: auto;
+    padding: 6px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background-color: var(--color-panel);
+    box-shadow: 0 4px 16px rgb(0 0 0 / 40%);
 }
 
 .floating-tool-controls > :deep(*) {
-  flex: 1;
+    flex: 1;
 }
 
 .floating-tool-controls > :deep(.crop-controls) {
-  flex: 0 1 auto;
+    flex: 0 1 auto;
 }
 
 .floating-tool-controls:empty {
-  display: none;
+    display: none;
 }
 </style>

@@ -59,60 +59,60 @@
 
 <style scoped>
 .zoom-controls {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px;
-  font-size: 12px;
-  background-color: rgb(43 43 43 / 85%);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    font-size: 12px;
+    background-color: rgb(43 43 43 / 85%);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
 }
 
 .zoom-level {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 6px;
-  font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 6px;
+    font-variant-numeric: tabular-nums;
 }
 
 .image-dimensions {
-  padding: 0 6px;
-  border-left: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+    padding: 0 6px;
+    border-left: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .zoom-button {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 22px;
-  padding: 0;
-  font-size: 13px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  cursor: pointer;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 22px;
+    padding: 0;
+    font-size: 13px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    cursor: pointer;
 }
 
 .zoom-button:hover:not(:disabled) {
-  background-color: var(--color-hover);
+    background-color: var(--color-hover);
 }
 
 .zoom-button:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 1px;
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
 }
 
 .zoom-button:disabled {
-  opacity: 0.4;
-  cursor: default;
+    opacity: 0.4;
+    cursor: default;
 }
 </style>

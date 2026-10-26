@@ -247,151 +247,151 @@
 
 <style scoped>
 .levels {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .histogram {
-  position: relative;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
+    position: relative;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
 }
 
 .histogram__canvas {
-  display: block;
-  width: 100%;
-  height: 100px;
+    display: block;
+    width: 100%;
+    height: 100px;
 }
 
 .histogram__message {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: var(--color-text-muted);
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--color-text-muted);
 }
 
 .track {
-  position: relative;
-  height: 28px;
-  margin: 0 7px;
+    position: relative;
+    height: 28px;
+    margin: 0 7px;
 }
 
 .track__ramp {
-  position: absolute;
-  inset: 0 -7px auto;
-  height: 8px;
-  background: linear-gradient(to right, #000, #fff);
-  border: 1px solid var(--color-border);
+    position: absolute;
+    inset: 0 -7px auto;
+    height: 8px;
+    background: linear-gradient(to right, #000, #fff);
+    border: 1px solid var(--color-border);
 }
 
 .handle {
-  position: absolute;
-  top: 10px;
-  width: 0;
-  height: 0;
-  padding: 0;
-  background: none;
-  border: 7px solid transparent;
-  border-top: 0;
-  border-bottom: 12px solid;
-  transform: translateX(-50%);
-  cursor: ew-resize;
-  touch-action: none;
-  filter: drop-shadow(0 0 1px #fff);
+    position: absolute;
+    top: 10px;
+    width: 0;
+    height: 0;
+    padding: 0;
+    background: none;
+    border: 7px solid transparent;
+    border-top: 0;
+    border-bottom: 12px solid;
+    transform: translateX(-50%);
+    cursor: ew-resize;
+    touch-action: none;
+    filter: drop-shadow(0 0 1px #fff);
 }
 
 .handle--black {
-  border-bottom-color: #000;
+    border-bottom-color: #000;
 }
 
 .handle--mid {
-  border-bottom-color: #808080;
+    border-bottom-color: #808080;
 }
 
 .handle--white {
-  border-bottom-color: #fff;
-  filter: drop-shadow(0 0 1px #000);
+    border-bottom-color: #fff;
+    filter: drop-shadow(0 0 1px #000);
 }
 
 .handle:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 3px;
+    outline: 2px solid var(--color-focus);
+    outline-offset: 3px;
 }
 
 .fields {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
 }
 
 .field {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  gap: 6px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 6px;
 }
 
 .field__input {
-  width: 100%;
-  min-width: 0;
-  min-height: 34px;
-  padding: 6px 10px;
-  color: var(--color-text);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 3px;
-  font: inherit;
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+    padding: 6px 10px;
+    color: var(--color-text);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 3px;
+    font: inherit;
 }
 
 .field__input:focus-visible,
 .preview-toggle input:focus-visible {
-  outline: 1px solid var(--color-focus);
-  outline-offset: 0;
+    outline: 1px solid var(--color-focus);
+    outline-offset: 0;
 }
 
 .reset-button:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: -2px;
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
 }
 
 .footer-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 }
 
 .preview-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
 }
 
 .reset-button {
-  align-self: flex-start;
-  min-height: 30px;
-  padding: 4px 10px;
-  color: var(--color-text);
-  background: var(--color-button-secondary);
-  border: 1px solid var(--color-button-secondary-border);
-  border-radius: var(--radius-button);
-  cursor: pointer;
+    align-self: flex-start;
+    min-height: 30px;
+    padding: 4px 10px;
+    color: var(--color-text);
+    background: var(--color-button-secondary);
+    border: 1px solid var(--color-button-secondary-border);
+    border-radius: var(--radius-button);
+    cursor: pointer;
 }
 
 .reset-button:hover:not(:disabled) {
-  background: var(--color-button-secondary-hover);
-  border-color: var(--color-button-secondary-border-hover);
+    background: var(--color-button-secondary-hover);
+    border-color: var(--color-button-secondary-border-hover);
 }
 
 .reset-button:disabled {
-  opacity: var(--opacity-button-secondary-disabled);
-  cursor: not-allowed;
+    opacity: var(--opacity-button-secondary-disabled);
+    cursor: not-allowed;
 }
 
 .validation-message {
-  color: #fecaca;
+    color: #fecaca;
 }
 </style>

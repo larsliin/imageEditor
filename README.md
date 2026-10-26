@@ -20,10 +20,18 @@ reliable image-preview, import, and export workflow.
   Press or release Shift mid-drag to toggle the constraint. Focus a handle and
   use arrow keys for one-pixel adjustments. Resizing cannot cross the opposite edge
   or extend outside the image.
+  Straightening automatically fits the crop inside the rotated image. An
+  automatically fitted crop expands again when rotating back, including when
+  resetting the angle to zero. Manual selections that still fit are preserved.
 - **Zoom and pan** around the preview, including fit-to-window and actual-size
   views. Fit-to-window scales smaller images up and larger images down to the
   available preview area, within the 1%-3200% zoom range. Actual size shows the
-  image at 100%. Hold Space to pan while using the crop tool.
+  image at 100%. Hold Space to pan while using the crop tool. Release a moving
+  drag to throw the preview with smoothly decaying momentum. A new pointer
+  press, wheel scroll, or key press stops the motion, as do image, zoom, or
+  tool changes. Holding Space through mouse release (including keyboard
+  auto-repeat) or releasing Space does not cancel the throw.
+  Reduced-motion preferences disable the throw effect.
 - **Resize** opens a modal with synchronized width and height fields in both
   pixels and percentages, visible together. Editing either unit updates the other.
   The aspect-ratio lock is centered between both rows and is locked by default;
@@ -80,7 +88,13 @@ npm run build
 Run the crop-coordinate and zoom tests with Node.js 22.18 or later:
 
 ```sh
-node --test src/lib/__tests__/crop.test.ts src/lib/__tests__/zoom.test.ts src/lib/__tests__/useZoom.test.ts
+node --test src/lib/__tests__/crop.test.ts src/lib/__tests__/zoom.test.ts src/lib/__tests__/useZoom.test.ts src/lib/__tests__/usePan.test.ts
+```
+
+Run the crop-overlay straighten regression tests:
+
+```sh
+node --test src/lib/__tests__/cropOverlay.test.ts
 ```
 
 Run the bounded undo/redo history and bitmap-lifecycle regression tests:

@@ -11,6 +11,9 @@ or backend services unless explicitly requested.
 
 - Use Vue 3 single-file components with the Composition API and
   `<script setup lang="ts">`.
+- Vue component and composable files must not exceed 500 lines. If a file
+  would exceed this limit, split components into smaller focused components
+  and composable logic into smaller composables or focused utilities.
 - Keep TypeScript types explicit at image-processing boundaries; avoid `any`.
 - Use the existing Vite setup and npm scripts. Prefer browser APIs for image
   processing; add dependencies only when they provide a clear benefit.

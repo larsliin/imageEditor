@@ -125,83 +125,83 @@
 
 <style scoped>
 .dimension-label--height-percentage {
-  grid-column: 3;
+    grid-column: 3;
 }
 
 .resize-controls {
-  --label-gap: 6px;
+    --label-gap: 6px;
 
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: end;
-  gap: 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: end;
+    gap: 12px;
 }
 
 .dimension-label {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  gap: var(--label-gap);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: var(--label-gap);
 }
 
 .dimension-input,
 .lock-button {
-  min-height: 34px;
-  padding: 6px 10px;
-  color: var(--color-text);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 3px;
-  font: inherit;
+    min-height: 34px;
+    padding: 6px 10px;
+    color: var(--color-text);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 3px;
+    font: inherit;
 }
 
 .dimension-input {
-  width: 100%;
-  min-width: 0;
+    width: 100%;
+    min-width: 0;
 }
 
 .lock-button {
-  display: grid;
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: center;
-  /* Center between input edges, excluding the first row's label and label gap. */
-  translate: 0 calc((1lh + var(--label-gap)) / 2);
-  place-items: center;
-  width: 34px;
-  padding: 0;
-  background: var(--color-button-secondary);
-  border-color: var(--color-button-secondary-border);
-  border-radius: var(--radius-button);
-  cursor: pointer;
+    display: grid;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    /* Center between input edges, excluding the first row's label and label gap. */
+    translate: 0 calc((1lh + var(--label-gap)) / 2);
+    place-items: center;
+    width: 34px;
+    padding: 0;
+    background: var(--color-button-secondary);
+    border-color: var(--color-button-secondary-border);
+    border-radius: var(--radius-button);
+    cursor: pointer;
 }
 
 .lock-button:hover:not(:disabled) {
-  background: var(--color-button-secondary-hover);
-  border-color: var(--color-button-secondary-border-hover);
+    background: var(--color-button-secondary-hover);
+    border-color: var(--color-button-secondary-border-hover);
 }
 
 .lock-button[aria-pressed='true'] {
-  border-color: var(--color-accent);
+    border-color: var(--color-accent);
 }
 
 .lock-button:disabled {
-  opacity: var(--opacity-button-secondary-disabled);
-  cursor: not-allowed;
+    opacity: var(--opacity-button-secondary-disabled);
+    cursor: not-allowed;
 }
 
 .dimension-input:focus-visible {
-  outline: 1px solid var(--color-focus);
-  outline-offset: 0;
+    outline: 1px solid var(--color-focus);
+    outline-offset: 0;
 }
 
 .lock-button:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: -2px;
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
 }
 
 .validation-message {
-  margin-top: 12px;
-  color: #fecaca;
+    margin-top: 12px;
+    color: #fecaca;
 }
 </style>

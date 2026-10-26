@@ -149,59 +149,59 @@
 
 <style scoped>
 .tool-rail {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  width: 48px;
-  padding: 8px 0;
-  background-color: var(--color-panel);
-  border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 48px;
+    padding: 8px 0;
+    background-color: var(--color-panel);
+    border-right: 1px solid var(--color-border);
 }
 
 .tool-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .separator {
-  align-self: center;
-  width: 28px;
-  border: none;
-  border-top: 1px solid var(--color-border);
+    align-self: center;
+    width: 28px;
+    border: none;
+    border-top: 1px solid var(--color-border);
 }
 
 .tool-button {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  font-size: 18px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  cursor: pointer;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    font-size: 18px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 .tool-button:hover:not(:disabled) {
-  background-color: var(--color-hover);
+    background-color: var(--color-hover);
 }
 
 .tool-button.is-active {
-  background-color: var(--color-active);
-  border-color: var(--color-accent);
-  color: #fff;
+    background-color: var(--color-active);
+    border-color: var(--color-accent);
+    color: #fff;
 }
 
 .tool-button:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 1px;
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
 }
 
 .tool-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 </style>

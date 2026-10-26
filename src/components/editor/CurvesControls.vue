@@ -313,165 +313,165 @@
 
 <style scoped>
 .curves {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .graph {
-  display: block;
-  width: min(100%, 340px);
-  aspect-ratio: 1;
-  margin: 0 auto;
-  touch-action: none;
-  cursor: crosshair;
-  user-select: none;
+    display: block;
+    width: min(100%, 340px);
+    aspect-ratio: 1;
+    margin: 0 auto;
+    touch-action: none;
+    cursor: crosshair;
+    user-select: none;
 }
 
 .graph__bg {
-  fill: var(--color-bg);
-  stroke: var(--color-border);
+    fill: var(--color-bg);
+    stroke: var(--color-border);
 }
 
 .graph__histogram {
-  fill: #c9d1d9;
-  opacity: 0.3;
+    fill: #c9d1d9;
+    opacity: 0.3;
 }
 
 .graph__grid line {
-  stroke: var(--color-border);
-  stroke-width: 1;
+    stroke: var(--color-border);
+    stroke-width: 1;
 }
 
 .graph__grid .graph__diagonal {
-  stroke-dasharray: 4 4;
+    stroke-dasharray: 4 4;
 }
 
 .graph__curve {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 2;
+    fill: none;
+    stroke: #fff;
+    stroke-width: 2;
 }
 
 .graph__curve--red {
-  stroke: #f87171;
+    stroke: #f87171;
 }
 
 .graph__curve--green {
-  stroke: #4ade80;
+    stroke: #4ade80;
 }
 
 .graph__curve--blue {
-  stroke: #60a5fa;
+    stroke: #60a5fa;
 }
 
 .graph__point {
-  fill: var(--color-bg);
-  stroke: #fff;
-  stroke-width: 2;
-  cursor: move;
+    fill: var(--color-bg);
+    stroke: #fff;
+    stroke-width: 2;
+    cursor: move;
 }
 
 .graph__point.is-selected {
-  fill: #fff;
-  stroke: var(--color-accent);
+    fill: #fff;
+    stroke: var(--color-accent);
 }
 
 .graph__point:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
 }
 
 .hint {
-  color: var(--color-text-muted);
-  font-size: 12px;
+    color: var(--color-text-muted);
+    font-size: 12px;
 }
 
 .fields {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
-  align-items: end;
-  gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+    align-items: end;
+    gap: 12px;
 }
 
 .field {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  gap: 6px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 6px;
 }
 
 .field--channel {
-  max-width: 50%;
+    max-width: 50%;
 }
 
 .channel-select {
-  position: relative;
+    position: relative;
 }
 
 .channel-select .channel-select__input {
-  appearance: none;
-  padding-right: 32px;
+    appearance: none;
+    padding-right: 32px;
 }
 
 .channel-select__icon {
-  position: absolute;
-  top: 50%;
-  right: 10px;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: var(--color-text);
-  font-size: 12px;
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--color-text);
+    font-size: 12px;
 }
 
 .field__input {
-  width: 100%;
-  min-width: 0;
-  min-height: 34px;
-  padding: 6px 10px;
-  color: var(--color-text);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 3px;
-  font: inherit;
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+    padding: 6px 10px;
+    color: var(--color-text);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 3px;
+    font: inherit;
 }
 
 .field__input:focus-visible,
 .preview-toggle input:focus-visible {
-  outline: 1px solid var(--color-focus);
-  outline-offset: 0;
+    outline: 1px solid var(--color-focus);
+    outline-offset: 0;
 }
 
 .reset-button:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: -2px;
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
 }
 
 .preview-toggle {
-  display: flex;
-  align-items: center;
-  align-self: flex-start;
-  gap: 6px;
-  cursor: pointer;
+    display: flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 6px;
+    cursor: pointer;
 }
 
 .reset-button {
-  min-height: 34px;
-  padding: 4px 12px;
-  color: var(--color-text);
-  background: var(--color-button-secondary);
-  border: 1px solid var(--color-button-secondary-border);
-  border-radius: var(--radius-button);
-  cursor: pointer;
+    min-height: 34px;
+    padding: 4px 12px;
+    color: var(--color-text);
+    background: var(--color-button-secondary);
+    border: 1px solid var(--color-button-secondary-border);
+    border-radius: var(--radius-button);
+    cursor: pointer;
 }
 
 .reset-button:hover:not(:disabled) {
-  background: var(--color-button-secondary-hover);
-  border-color: var(--color-button-secondary-border-hover);
+    background: var(--color-button-secondary-hover);
+    border-color: var(--color-button-secondary-border-hover);
 }
 
 .reset-button:disabled {
-  opacity: var(--opacity-button-secondary-disabled);
-  cursor: not-allowed;
+    opacity: var(--opacity-button-secondary-disabled);
+    cursor: not-allowed;
 }
 </style>

@@ -43,10 +43,12 @@
     const imageSurfaceRef = useTemplateRef<HTMLDivElement>('image-surface');
     const canvasRef = useTemplateRef<HTMLCanvasElement>('canvas');
 
-    const { isPanMode, isDragging } = usePan(viewportRef, {
+    const { isPanMode, isDragging, stopMomentum } = usePan(viewportRef, {
         enabled: () => props.panEnabled,
         available: () => props.bitmap !== null && !props.busy,
     });
+
+    watch([() => props.zoom, () => props.bitmap], stopMomentum, { flush: 'sync' });
 
     const previewStyle = computed(() => {
         if (!props.bitmap) return undefined;
@@ -224,172 +226,172 @@
 
 <style scoped>
 .workspace {
-  position: relative;
-  display: grid;
-  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-  background-color: var(--color-bg);
+    position: relative;
+    display: grid;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background-color: var(--color-bg);
 }
 
 /* Scroll container; its padded content box is the area used to compute the fit zoom. */
 .viewport {
-  display: flex;
-  padding: 24px;
-  overflow: auto;
-  /* Scroll position is driven by panning, so the scrollbars themselves are hidden. */
-  scrollbar-width: none;
+    display: flex;
+    padding: 24px;
+    overflow: auto;
+    /* Scroll position is driven by panning, so the scrollbars themselves are hidden. */
+    scrollbar-width: none;
 }
 
 .viewport::-webkit-scrollbar {
-  display: none;
+    display: none;
 }
 
 .viewport:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: -2px;
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
 }
 
 .viewport.is-pan-mode {
-  cursor: grab;
-  user-select: none;
-  touch-action: none;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
 }
 
 .viewport.is-dragging {
-  cursor: grabbing;
+    cursor: grabbing;
 }
 
 /* Auto margins center content but, unlike justify/align center, never clip it when it overflows. */
 .viewport > * {
-  flex-shrink: 0;
-  margin: auto;
+    flex-shrink: 0;
+    margin: auto;
 }
 
 .image-surface {
-  position: relative;
+    position: relative;
 }
 
 .preview {
-  display: block;
-  width: 100%;
-  height: 100%;
-  /* Checkerboard makes transparent areas visible. */
-  background-color: #fff;
-  background-image:
-    linear-gradient(45deg, #ccc 25%, transparent 25%),
-    linear-gradient(-45deg, #ccc 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #ccc 75%),
-    linear-gradient(-45deg, transparent 75%, #ccc 75%);
-  background-size: 16px 16px;
-  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
-  box-shadow: 0 2px 12px rgb(0 0 0 / 50%);
+    display: block;
+    width: 100%;
+    height: 100%;
+    /* Checkerboard makes transparent areas visible. */
+    background-color: #fff;
+    background-image:
+        linear-gradient(45deg, #ccc 25%, transparent 25%),
+        linear-gradient(-45deg, #ccc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ccc 75%),
+        linear-gradient(-45deg, transparent 75%, #ccc 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    box-shadow: 0 2px 12px rgb(0 0 0 / 50%);
 }
 
 .preview.is-magnified {
-  image-rendering: pixelated;
+    image-rendering: pixelated;
 }
 
 .empty-state,
 .status-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: var(--color-text-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--color-text-muted);
 }
 
 .status-message > .bi {
-  font-size: 48px;
+    font-size: 48px;
 }
 
 .empty-state {
-  width: min(100%, 440px);
-  padding: 36px 28px;
-  gap: 16px;
-  text-align: center;
-  background-color: var(--color-panel);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
+    width: min(100%, 440px);
+    padding: 36px 28px;
+    gap: 16px;
+    text-align: center;
+    background-color: var(--color-panel);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
 }
 
 .empty-state__icon {
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  color: var(--color-focus);
-  font-size: 30px;
-  background-color: rgb(96 165 250 / 12%);
-  border-radius: 16px;
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    color: var(--color-focus);
+    font-size: 30px;
+    background-color: rgb(96 165 250 / 12%);
+    border-radius: 16px;
 }
 
 .empty-state__title {
-  color: var(--color-text);
-  font-size: 20px;
-  font-weight: 600;
-  line-height: 1.3;
+    color: var(--color-text);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.3;
 }
 
 .empty-state__description {
-  max-width: 30ch;
-  font-size: 14px;
-  line-height: 1.6;
+    max-width: 30ch;
+    font-size: 14px;
+    line-height: 1.6;
 }
 
 .import-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  color: #fff;
-  background-color: var(--color-accent);
-  border: 1px solid transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    color: #fff;
+    background-color: var(--color-accent);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
 }
 
 .import-button:hover {
-  filter: brightness(1.1);
+    filter: brightness(1.1);
 }
 
 .import-button:focus-visible,
 .dismiss-button:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
 }
 
 .error-banner {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  max-width: calc(100% - 24px);
-  padding: 8px 8px 8px 12px;
-  color: #fecaca;
-  background-color: #3f1d1d;
-  border: 1px solid #7f1d1d;
-  border-radius: 4px;
-  transform: translateX(-50%);
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100% - 24px);
+    padding: 8px 8px 8px 12px;
+    color: #fecaca;
+    background-color: #3f1d1d;
+    border: 1px solid #7f1d1d;
+    border-radius: 4px;
+    transform: translateX(-50%);
 }
 
 .dismiss-button {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 .dismiss-button:hover {
-  background-color: rgb(255 255 255 / 10%);
+    background-color: rgb(255 255 255 / 10%);
 }
 </style>

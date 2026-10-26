@@ -73,91 +73,91 @@
 
 <style scoped>
 .tool-modal {
-  width: min(420px, calc(100vw - 32px));
-  max-height: calc(100dvh - 32px);
-  margin: auto;
-  padding: 0;
-  overflow: auto;
-  color: var(--color-text);
-  background: var(--color-panel);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  box-shadow: 0 16px 48px rgb(0 0 0 / 50%);
+    width: min(420px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
+    margin: auto;
+    padding: 0;
+    overflow: auto;
+    color: var(--color-text);
+    background: var(--color-panel);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 16px 48px rgb(0 0 0 / 50%);
 }
 
 .tool-modal::backdrop {
-  background: transparent;
+    background: transparent;
 }
 
 .tool-modal__form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px;
 }
 
 .tool-modal__title {
-  font-size: 18px;
-  font-weight: 600;
+    font-size: 18px;
+    font-weight: 600;
 }
 
 .tool-modal__fields {
-  min-width: 0;
-  padding: 0;
-  border: 0;
+    min-width: 0;
+    padding: 0;
+    border: 0;
 }
 
 .tool-modal__error {
-  color: #fecaca;
+    color: #fecaca;
 }
 
 .tool-modal__status {
-  color: var(--color-text-muted);
+    color: var(--color-text-muted);
 }
 
 .tool-modal__actions {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 8px;
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .tool-modal__button {
-  min-height: 34px;
-  padding: 6px 12px;
-  background: var(--color-button-secondary);
-  border: 1px solid var(--color-button-secondary-border);
-  border-radius: var(--radius-button);
-  cursor: pointer;
+    min-height: 34px;
+    padding: 6px 12px;
+    background: var(--color-button-secondary);
+    border: 1px solid var(--color-button-secondary-border);
+    border-radius: var(--radius-button);
+    cursor: pointer;
 }
 
 .tool-modal__button--apply {
-  color: #fff;
-  background: var(--color-accent);
-  border-color: transparent;
+    color: #fff;
+    background: var(--color-accent);
+    border-color: transparent;
 }
 
 .tool-modal__button:hover:not(:disabled) {
-  filter: brightness(1.15);
+    filter: brightness(1.15);
 }
 
 .tool-modal__button:not(.tool-modal__button--apply):hover:not(:disabled) {
-  background: var(--color-button-secondary-hover);
-  border-color: var(--color-button-secondary-border-hover);
-  filter: none;
+    background: var(--color-button-secondary-hover);
+    border-color: var(--color-button-secondary-border-hover);
+    filter: none;
 }
 
 .tool-modal__button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 .tool-modal__button:not(.tool-modal__button--apply):disabled {
-  opacity: var(--opacity-button-secondary-disabled);
+    opacity: var(--opacity-button-secondary-disabled);
 }
 
 .tool-modal__button:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
 }
 </style>

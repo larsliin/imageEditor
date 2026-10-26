@@ -92,9 +92,9 @@
                         :disabled="busy || !image"
                         @change="updateExportFormat"
                     >
-                        <option value="image/jpeg">JPG</option>
-                        <option value="image/png">PNG</option>
-                        <option value="image/bmp">BMP</option>
+                        <option value="image/jpeg" :disabled="image.exportMimeType === 'image/bmp'">JPG</option>
+                        <option value="image/png" :disabled="image.exportMimeType === 'image/bmp'">PNG</option>
+                        <option value="image/bmp" :disabled="image.exportMimeType !== 'image/bmp'">BMP</option>
                     </select>
                 </dd>
             </div>
@@ -104,125 +104,129 @@
 
 <style scoped>
 .top-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px 16px;
-  height: 48px;
-  overflow-x: auto;
-  padding: 0 12px;
-  background-color: var(--color-panel);
-  border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    gap: 8px 16px;
+    height: 48px;
+    overflow-x: auto;
+    padding: 0 12px;
+    background-color: var(--color-panel);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .document-details {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 16px;
-  min-width: 0;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
 }
 
 .document-detail {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  color: var(--color-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    color: var(--color-text-muted);
 }
 
 .document-detail dt {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--color-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-text-muted);
 }
 
 .document-detail dt span::after {
-  content: ':';
+    content: ':';
 }
 
 .document-detail dd {
-  margin: 0;
-  font-variant-numeric: tabular-nums;
-  font-size: 0.875rem;
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.875rem;
 }
 
 .filename-controls {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex: 0 0 auto;
 }
 
 .filename-input {
-  width: auto;
-  field-sizing: content;
-  min-width: 1.5rem;
-  max-width: min(18rem, 40vw);
-  height: 22px;
-  padding: 4px 0 4px 1px;
-  border: 1px solid var(--color-border);
-  border-radius: 3px;
-  font: inherit;
-  font-size: 12px;
-  color: var(--color-text-muted);
-  background-color: var(--color-bg);
+    width: auto;
+    field-sizing: content;
+    min-width: 1.5rem;
+    max-width: min(18rem, 40vw);
+    height: 22px;
+    padding: 4px 0 4px 1px;
+    border: 1px solid var(--color-border);
+    border-radius: 3px;
+    font: inherit;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    background-color: var(--color-bg);
 }
 
 .filename-input:read-only {
-  border-color: transparent;
-  background-color: transparent;
-  text-overflow: ellipsis;
-  cursor: pointer;
+    border-color: transparent;
+    background-color: transparent;
+    text-overflow: ellipsis;
+    cursor: pointer;
 }
 
 .filename-input:read-only:hover:not(:disabled) {
-  color: var(--color-text);
+    color: var(--color-text);
 }
 
 .filename-input:disabled {
-  cursor: default;
+    cursor: default;
 }
 
 .export-format {
-  width: 50px;
-  min-width: 0;
-  height: 24px;
-  margin-left: 2px;
-  padding: 2px 0;
-  border: 1px solid var(--color-border);
-  border-radius: 3px;
-  font: inherit;
-  font-size: 12px;
-  color: var(--color-text-muted);
-  background-color: var(--color-panel-raised);
-  cursor: pointer;
+    width: 50px;
+    min-width: 0;
+    height: 24px;
+    margin-left: 2px;
+    padding: 2px 0;
+    border: 1px solid var(--color-border);
+    border-radius: 3px;
+    font: inherit;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    background-color: var(--color-panel-raised);
+    cursor: pointer;
+}
+
+.export-format option:disabled {
+    color: #666;
 }
 
 .export-format:hover:not(:disabled) {
-  color: var(--color-text);
-  background-color: var(--color-hover);
+    color: var(--color-text);
+    background-color: var(--color-hover);
 }
 
 .export-format:disabled {
-  opacity: 0.5;
-  cursor: default;
+    opacity: 0.5;
+    cursor: default;
 }
 
 .filename-input:focus-visible,
 .export-format:focus-visible {
-  outline: 1px solid var(--color-focus);
-  outline-offset: 0;
+    outline: 1px solid var(--color-focus);
+    outline-offset: 0;
 }
 
 .filename-extension-separator {
-  margin: 0 1px;
-  color: var(--color-text-muted);
+    margin: 0 1px;
+    color: var(--color-text-muted);
 }
 
 @media (max-width: 640px) {
-  .document-details {
-    gap: 10px;
-  }
+    .document-details {
+        gap: 10px;
+    }
 }
 </style>

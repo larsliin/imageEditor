@@ -61,51 +61,51 @@
 
 <style scoped>
 .modes {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .mode {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 .mode:hover {
-  background-color: var(--color-hover);
+    background-color: var(--color-hover);
 }
 
 .mode:has(.mode__input:checked) {
-  border-color: var(--color-accent);
+    border-color: var(--color-accent);
 }
 
 .mode__input {
-  margin: 3px 0 0;
-  accent-color: var(--color-accent);
+    margin: 3px 0 0;
+    accent-color: var(--color-accent);
 }
 
 .mode__input:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
 }
 
 .mode__text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .mode__label {
-  font-weight: 600;
+    font-weight: 600;
 }
 
 .mode__description {
-  color: var(--color-text-muted);
-  font-size: 0.875rem;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
 }
 </style>
