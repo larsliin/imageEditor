@@ -247,7 +247,7 @@
                 :viewBox="`0 0 ${VIEW} ${VIEW}`"
                 role="group"
                 aria-label="Curve graph"
-                :aria-describedby="`${idPrefix}-help`"
+                aria-description="Click to add points; drag to adjust. Arrow keys nudge (Shift for 10). Double-click or Delete removes a point."
                 @pointerdown.prevent="onPointerDown"
                 @pointermove="onPointerMove"
                 @pointerup="onPointerUp"
@@ -285,10 +285,6 @@
                 />
             </svg>
             <p v-if="histogramError" class="hint">Histogram unavailable.</p>
-            <p :id="`${idPrefix}-help`" class="hint">
-                Click the graph to add a point and drag to adjust it. Arrow keys nudge the focused point (Shift for 10).
-                Double-click or press Delete to remove a point.
-            </p>
 
             <div class="fields">
                 <label class="field" :for="`${idPrefix}-input`">

@@ -17,12 +17,14 @@
     import CurvesControls from './components/editor/CurvesControls.vue';
     import type { CurvesParams } from './lib/curves';
     import ColorModeControls from './components/editor/ColorModeControls.vue';
+    import ExportDialog from './components/editor/ExportDialog.vue';
+    import type { PreparedExport } from './lib/imageIO';
     import type { ColorMode } from './lib/colorMode';
 
     const {
         bitmap, info, documentId, status, error, isBusy, importImage, exportImage, cropImage, rotateImage,
-        resizeImage, levelsImage, curvesImage, colorModeImage, renameImage, setExportMimeType, dismissError,
-        canUndo, canRedo, undo, redo,
+        resizeImage, levelsImage, curvesImage, colorModeImage, renameImage, dismissError,
+        canUndo, canRedo, undo, redo, originalFileSize,
     }
         = useImageDocument();
 
@@ -38,6 +40,18 @@
     );
 
     const activeTool = ref<ToolId | null>(null);
+    const exportOpen = ref(false);
+
+    function openExport() {
+        if (!bitmap.value || isBusy.value) return;
+        activeTool.value = null;
+        dismissError();
+        exportOpen.value = true;
+    }
+
+    async function downloadExport(prepared: PreparedExport) {
+        if (await exportImage(prepared)) exportOpen.value = false;
+    }
     const isDarkMode = ref(true);
     const themeStorageKey = 'image-editor-theme';
 
@@ -107,6 +121,7 @@
 
     watch(bitmap, () => {
         activeTool.value = null;
+        exportOpen.value = false;
     });
 
     function handleEditorShortcut(event: KeyboardEvent) {
@@ -149,7 +164,6 @@
             :busy="isBusy"
             :is-dark-mode="isDarkMode"
             @rename="renameImage"
-            @export-format-change="setExportMimeType"
             @toggle-theme="toggleTheme"
         />
         <EditorToolRail
@@ -163,7 +177,7 @@
             :can-redo="canRedo"
             @select-tool="selectTool"
             @import="importImage"
-            @export="exportImage"
+            @export="openExport"
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
             @undo="undo"
@@ -202,6 +216,16 @@
             </template>
         </EditorCanvas>
         <div id="editor-tool-controls" class="floating-tool-controls"></div>
+        <ExportDialog
+            v-if="exportOpen && bitmap && info"
+            :bitmap="bitmap"
+            :image="info"
+            :original-size="originalFileSize"
+            :busy="isBusy"
+            :error="error"
+            @download="downloadExport"
+            @cancel="exportOpen = false"
+        />
         <RotateControls
             v-if="activeTool === 'rotate' && bitmap"
             :disabled="isBusy"

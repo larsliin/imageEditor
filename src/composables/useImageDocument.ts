@@ -23,6 +23,7 @@ import {
     rotateImageBitmap,
     rotateCropImageBitmap,
     type ExportMimeType,
+    type PreparedExport,
 } from '@/lib/imageIO';
 
 export type DocumentStatus = 'idle' | 'loading' | 'processing' | 'exporting';
@@ -32,6 +33,7 @@ interface LoadedDocument {
     bitmap: ImageBitmap
     fileName: string
     exportMimeType: ExportMimeType
+    sourceByteSize: number
 }
 
 interface HistoryEntry {
@@ -60,6 +62,7 @@ export function useImageDocument() {
     let disposed = false;
 
     const bitmap = computed(() => current.value?.bitmap ?? null);
+    const originalFileSize = computed(() => current.value?.sourceByteSize ?? 0);
     const info = computed<ImageInfo | null>(() =>
         current.value
             ? {
@@ -155,7 +158,7 @@ export function useImageDocument() {
             }
             const exportMimeType = resolveExportMimeType(selectedFile.type);
             const fileName = exportFileName(selectedFile.name, exportMimeType);
-            replaceDocument({ original: decoded, bitmap: decoded, fileName, exportMimeType });
+            replaceDocument({ original: decoded, bitmap: decoded, fileName, exportMimeType, sourceByteSize: selectedFile.size });
             documentId.value += 1;
             revision.value = 0;
             savedRevision.value = 0;
@@ -357,22 +360,32 @@ export function useImageDocument() {
         }, revision.value);
     }
 
-    async function exportImage() {
+    async function exportImage(prepared?: PreparedExport): Promise<boolean> {
         const doc = current.value;
-        if (!doc || isBusy.value) return;
+        if (!doc || isBusy.value) return false;
+        if (prepared && (prepared.bitmap !== doc.bitmap || prepared.blob.type !== prepared.mimeType)) {
+            error.value = 'The image has changed. Reopen Export to prepare a new export.';
+            return false;
+        }
 
         status.value = 'exporting';
         error.value = null;
         try {
-            const mimeType = doc.exportMimeType;
-            const blob = await canvasToBlob(renderToCanvas(doc.bitmap), mimeType);
-            if (disposed) return;
-            downloadBlob(blob, exportFileName(doc.fileName, mimeType));
+            const mimeType = prepared?.mimeType ?? doc.exportMimeType;
+            const blob = prepared?.blob ?? await canvasToBlob(
+                renderToCanvas(doc.bitmap, mimeType === 'image/jpeg' ? '#fff' : undefined), mimeType,
+            );
+            if (disposed) return false;
+            const fileName = exportFileName(doc.fileName, mimeType);
+            downloadBlob(blob, fileName);
+            current.value = { ...doc, fileName, exportMimeType: mimeType };
             savedRevision.value = revision.value;
-            savedFileName.value = doc.fileName;
+            savedFileName.value = fileName;
             savedExportMimeType.value = mimeType;
+            return true;
         } catch (e) {
             error.value = errorMessage(e, 'The image could not be saved.');
+            return false;
         } finally {
             status.value = 'idle';
         }
@@ -397,6 +410,7 @@ export function useImageDocument() {
 
     return {
         bitmap,
+        originalFileSize,
         info,
         documentId: readonly(documentId),
         status: readonly(status),

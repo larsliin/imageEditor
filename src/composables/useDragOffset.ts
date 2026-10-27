@@ -1,13 +1,21 @@
 import { computed, shallowRef } from 'vue';
 import type { Point } from '@/lib/crop';
 
-/** Tracks an unbounded pointer-drag offset; elements may be moved outside the window. */
-export function useDragOffset(options: { onEnd?: () => void } = {}) {
+// The parameter is part of the callback type and is intentionally not referenced here.
+// eslint-disable-next-line no-unused-vars
+type ClampOffset = (offset: Point) => Point;
+
+/** Tracks a pointer-drag offset; unbounded unless a `clamp` function is provided. */
+export function useDragOffset(options: { onEnd?: () => void, clamp?: ClampOffset } = {}) {
     const offset = shallowRef<Point>({ x: 0, y: 0 });
     const dragging = shallowRef(false);
     let pointerId: number | null = null;
     let origin: Point = { x: 0, y: 0 };
     let startOffset: Point = { x: 0, y: 0 };
+
+    function setOffset(next: Point) {
+        offset.value = options.clamp ? options.clamp(next) : next;
+    }
 
     function onPointerDown(event: PointerEvent) {
         if (pointerId !== null || event.button !== 0 || !(event.currentTarget instanceof Element)) return;
@@ -25,10 +33,10 @@ export function useDragOffset(options: { onEnd?: () => void } = {}) {
 
     function onPointerMove(event: PointerEvent) {
         if (event.pointerId !== pointerId) return;
-        offset.value = {
+        setOffset({
             x: startOffset.x + event.clientX - origin.x,
             y: startOffset.y + event.clientY - origin.y,
-        };
+        });
     }
 
     function onPointerEnd(event: PointerEvent) {
@@ -42,7 +50,7 @@ export function useDragOffset(options: { onEnd?: () => void } = {}) {
     }
 
     function nudge(dx: number, dy: number) {
-        offset.value = { x: offset.value.x + dx, y: offset.value.y + dy };
+        setOffset({ x: offset.value.x + dx, y: offset.value.y + dy });
     }
 
     function reset() {

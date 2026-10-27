@@ -60,8 +60,8 @@
             <button
                 type="button"
                 class="tool-button"
-                aria-label="Download image"
-                title="Download image"
+                aria-label="Export"
+                title="Export"
                 :disabled="!hasImage || busy"
                 @click="emit('export')"
             >

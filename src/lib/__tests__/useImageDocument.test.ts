@@ -35,7 +35,8 @@ class TestBitmap {
 
 function setup(t: TestContext) {
     const bitmaps: TestBitmap[] = [];
-    const files = [{ name: 'landscape.png', type: 'image/png', width: 80, height: 40 }];
+    const files = [{ name: 'landscape.png', type: 'image/png', width: 80, height: 40, size: 1000 }];
+    const downloads: Blob[] = [];
     const rotationAngles: number[] = [];
     const context = {
         save() {},
@@ -55,13 +56,13 @@ function setup(t: TestContext) {
                     click() { this.dispatchEvent(new Event('change')); },
                 });
             }
-            if (tag === 'a') return { click() {} };
+            if (tag === 'a') return { href: '', download: '', click() {} };
             assert.equal(tag, 'canvas');
             return {
                 width: 0,
                 height: 0,
                 getContext: () => context,
-                toBlob: (callback: globalThis.BlobCallback) => callback(new Blob(['image'])),
+                toBlob: (callback: globalThis.BlobCallback, type: string) => callback(new Blob(['image'], { type })),
             };
         },
     };
@@ -86,6 +87,11 @@ function setup(t: TestContext) {
         });
     }
     const scope = effectScope();
+    t.mock.method(URL, 'createObjectURL', (blob: Blob) => {
+        downloads.push(blob);
+        return 'blob:test-download';
+    });
+    t.mock.method(URL, 'revokeObjectURL', () => {});
     const editor = scope.run(useImageDocument)!;
     t.after(() => {
         try {
@@ -96,7 +102,7 @@ function setup(t: TestContext) {
         }
     });
     return {
-        editor, scope, bitmaps, files, rotationAngles,
+        editor, scope, bitmaps, files, rotationAngles, downloads,
         fail: () => { failProcessing = true; },
     };
 }
@@ -267,7 +273,7 @@ test('import clears history and releases old resources; disposal closes an in-fl
     await editor.importImage();
     await editor.rotateImage();
     editor.undo();
-    files[0] = { name: 'portrait.png', type: 'image/png', width: 40, height: 80 };
+    files[0] = { name: 'portrait.png', type: 'image/png', width: 40, height: 80, size: 2000 };
     await editor.importImage();
     assert.equal(editor.canUndo.value, false);
     assert.equal(editor.canRedo.value, false);
@@ -293,4 +299,33 @@ test('undoing to an exported state is clean and redo restores its saved revision
     assert.equal(editor.isDirty.value, true);
     editor.redo();
     assert.equal(editor.isDirty.value, false);
+});
+
+test('downloads the exact prepared blob without re-encoding and remembers its format', async (t) => {
+    const { editor, downloads } = setup(t);
+    await editor.importImage();
+    assert.equal(editor.originalFileSize.value, 1000);
+    const bitmap = editor.bitmap.value!;
+    const blob = new Blob(['exact encoded bytes'], { type: 'image/webp' });
+
+    assert.equal(await editor.exportImage({ bitmap, blob, mimeType: 'image/webp' }), true);
+    assert.deepEqual(downloads, [blob]);
+    assert.equal(downloads[0], blob);
+    assert.equal(editor.info.value?.fileName, 'landscape.webp');
+    assert.equal(editor.info.value?.exportMimeType, 'image/webp');
+    assert.equal(editor.isDirty.value, false);
+    assert.equal(editor.bitmap.value, bitmap, 'compression must not alter editing pixels');
+});
+
+test('rejects stale exports and mismatched formats without downloading or marking edits saved', async (t) => {
+    const { editor, downloads } = setup(t);
+    await editor.importImage();
+    const original = editor.bitmap.value!;
+    await editor.resizeImage({ width: 20, height: 10 });
+    const blob = new Blob(['png'], { type: 'image/png' });
+    assert.equal(await editor.exportImage({ bitmap: original, blob, mimeType: 'image/png' }), false);
+    assert.match(editor.error.value!, /image has changed/);
+    assert.equal(await editor.exportImage({ bitmap: editor.bitmap.value!, blob, mimeType: 'image/jpeg' }), false);
+    assert.equal(downloads.length, 0);
+    assert.equal(editor.isDirty.value, true);
 });

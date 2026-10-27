@@ -1,7 +1,6 @@
 <script setup lang="ts">
     import { computed, nextTick, shallowRef, useTemplateRef } from 'vue';
     import type { ImageInfo } from '@/types/editor';
-    import type { ExportMimeType } from '@/lib/imageIO';
 
     const props = defineProps<{
         image: ImageInfo | null
@@ -11,7 +10,6 @@
 
     const emit = defineEmits<{
         rename: [fileName: string]
-        'export-format-change': [mimeType: ExportMimeType]
         'toggle-theme': []
     }>();
 
@@ -25,7 +23,7 @@
         return dot > 0 ? fileName.value.slice(0, dot) : fileName.value;
     });
     const displayedName = computed({
-        get: () => isEditing.value ? draftName.value : fileNameBase.value,
+        get: () => isEditing.value ? draftName.value : fileName.value,
         set: (value: string) => { draftName.value = value; },
     });
     async function startRenaming() {
@@ -53,13 +51,6 @@
         }
     }
 
-    function updateExportFormat(event: Event) {
-        const select = event.currentTarget;
-        if (!(select instanceof HTMLSelectElement)) return;
-        if (select.value === 'image/jpeg' || select.value === 'image/png') {
-            emit('export-format-change', select.value);
-        }
-    }
 </script>
 
 <template>
@@ -76,7 +67,7 @@
                         v-model="displayedName"
                         class="filename-input"
                         type="text"
-                        aria-label="Filename without extension"
+                        aria-label="Filename"
                         required
                         :readonly="!isEditing"
                         :tabindex="image ? 0 : -1"
@@ -88,18 +79,6 @@
                         @keydown.enter.prevent="isEditing ? finishRenaming(false, true) : startRenaming()"
                         @keydown.esc.prevent="finishRenaming(true, true)"
                     />
-                    <span v-if="image" class="filename-extension-separator" aria-hidden="true">.</span>
-                    <select
-                        v-if="image"
-                        class="export-format"
-                        aria-label="Export file type"
-                        :value="image?.exportMimeType ?? 'image/png'"
-                        :disabled="busy || !image"
-                        @change="updateExportFormat"
-                    >
-                        <option value="image/jpeg">JPG</option>
-                        <option value="image/png">PNG</option>
-                    </select>
                 </dd>
             </div>
         </dl>
@@ -243,44 +222,9 @@
     cursor: default;
 }
 
-.export-format {
-    width: 50px;
-    min-width: 0;
-    height: 24px;
-    margin-left: 2px;
-    padding: 2px 0;
-    border: 1px solid var(--color-border);
-    border-radius: 3px;
-    font: inherit;
-    font-size: 12px;
-    color: var(--color-text-muted);
-    background-color: var(--color-panel-raised);
-    cursor: pointer;
-}
-
-.export-format option:disabled {
-    color: #666;
-}
-
-.export-format:hover:not(:disabled) {
-    color: var(--color-text);
-    background-color: var(--color-hover);
-}
-
-.export-format:disabled {
-    opacity: 0.5;
-    cursor: default;
-}
-
-.filename-input:focus-visible,
-.export-format:focus-visible {
+.filename-input:focus-visible {
     outline: 1px solid var(--color-focus);
     outline-offset: 0;
-}
-
-.filename-extension-separator {
-    margin: 0 1px;
-    color: var(--color-text-muted);
 }
 
 @media (max-width: 640px) {

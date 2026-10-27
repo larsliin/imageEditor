@@ -13,6 +13,19 @@ const EXPORT_EXTENSIONS: Record<ExportMimeType, string> = {
 
 const LOSSY_EXPORT_QUALITY = 0.92;
 
+export interface PreparedExport {
+    bitmap: ImageBitmap
+    mimeType: ExportMimeType
+    blob: Blob
+}
+
+export const EXPORT_QUALITY_PRESETS = [
+    { label: 'Very High', value: 0.92 },
+    { label: 'High', value: 0.8 },
+    { label: 'Medium', value: 0.6 },
+    { label: 'Low', value: 0.4 },
+] as const;
+
 export function pickImageFile(): Promise<File | null> {
     return new Promise((resolve) => {
         const input = document.createElement('input');
@@ -49,13 +62,17 @@ export function exportFileNameFromBase(baseName: string, mimeType: ExportMimeTyp
     return `${baseName}.${EXPORT_EXTENSIONS[mimeType]}`;
 }
 
-export function renderToCanvas(source: ImageBitmap): HTMLCanvasElement {
+export function renderToCanvas(source: ImageBitmap, background?: string): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
     canvas.width = source.width;
     canvas.height = source.height;
     const context = canvas.getContext('2d');
     if (!context) {
         throw new Error('Canvas 2D rendering is not available in this browser.');
+    }
+    if (background) {
+        context.fillStyle = background;
+        context.fillRect(0, 0, canvas.width, canvas.height);
     }
     context.drawImage(source, 0, 0);
     return canvas;
@@ -145,13 +162,23 @@ export async function colorModeImageBitmap(source: ImageBitmap, mode: ColorMode)
     return createImageBitmap(canvas);
 }
 
-export function canvasToBlob(canvas: HTMLCanvasElement, mimeType: ExportMimeType): Promise<Blob> {
-    const quality = mimeType === 'image/png' ? undefined : LOSSY_EXPORT_QUALITY;
+export function canvasToBlob(
+    canvas: HTMLCanvasElement,
+    mimeType: ExportMimeType,
+    quality = LOSSY_EXPORT_QUALITY,
+): Promise<Blob> {
+    if (!Number.isFinite(quality) || quality < 0 || quality > 1) {
+        return Promise.reject(new Error('Export quality must be between 0 and 1.'));
+    }
     return new Promise((resolve, reject) => {
         canvas.toBlob(
-            (blob) => (blob ? resolve(blob) : reject(new Error('The image could not be encoded.'))),
+            (blob) => {
+                if (!blob) reject(new Error('The image could not be encoded.'));
+                else if (blob.type !== mimeType) reject(new Error('This browser does not support the selected export format.'));
+                else resolve(blob);
+            },
             mimeType,
-            quality,
+            mimeType === 'image/png' ? undefined : quality,
         );
     });
 }

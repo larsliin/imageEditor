@@ -59,17 +59,33 @@ unpacked Chrome extension to open the editor from the browser toolbar.
   composites transparent pixels onto white and preserves the selected export format.
 - **Switch between dark and light themes** with the theme button. The choice is
   saved locally in the browser.
-- **Download the edited image** at its full pixel resolution. PNG, JPEG, and WebP
-  are supported; other source formats default to PNG. Downloads create
-  a new file and do not overwrite the source. JPEG downloads use lossy
-  compression.
+- **Export** from the download icon opens an export dialog with JPEG,
+  PNG, and WebP formats. JPEG and WebP offer **Very High (92%)**, **High (80%)**,
+  **Medium (60%)**, and **Low (40%)** encoder quality presets; these are not
+  percentages of original quality or file size. PNG is lossless.
+  The dialog shows an encoded preview, original size, exact output bytes, and
+  the percentage size difference. Downloads reuse the prepared file without
+  encoding again, retain full pixel dimensions, and never overwrite the source.
+  The compact dialog places format and quality side by side and uses a
+  stable-height preview on a checkerboard (so transparency is visible) with a
+  spinner while preparing the export.
+  For PNG, the quality dropdown stays visible but is empty and disabled;
+  switching back to JPEG or WebP restores the previous quality selection.
+  JPEG composites transparency onto white; PNG and WebP retain transparency.
+  Re-encoding does not guarantee a smaller file than the original.
+  Encoding runs only while the dialog is open, one request at a time; rapid
+  changes skip outdated results. Cancel or Escape discards export settings
+  without altering the editing pixels. Other source formats default to PNG.
 - **Rename the image** with the pen icon next to the filename. Press Enter or
-  click away to save, or Escape to cancel. The input sizes to its content up to
-  32rem (or 40% of the viewport). Downloads use the new name with the extension
+  click away to save, or Escape to cancel.
+  The header displays the full filename with its extension; renaming edits only
+  the base name, with the extension determined by the export format.
+  The input sizes to its content up to 32rem (or 40% of the viewport).
+  Downloads use the new name with the extension
   matching the export format. Renaming changes only the download name, not the
   source file.
 - **Undo and redo** from the left toolbar. History keeps only the last three
-  applied edits, including image edits, filename, and export-format changes.
+  applied edits, including image edits and filename changes.
   Unapplied previews do not count. A new edit after undo clears redo; opening
   another image clears all history. Discarded history bitmaps are released to
   limit memory use.
@@ -87,6 +103,11 @@ default slot. It emits `apply` and `cancel` and handles modal focus, keyboard
 navigation, and shared actions. Mount it conditionally while the tool is open.
 All tool dialogs use the same panel styling and a transparent backdrop so the
 image preview is never dimmed while a dialog is open.
+The Export dialog stays fixed in the center. In the other dialogs, drag only the centered grip to reposition the dialog. The grip also supports arrow keys
+(Shift for larger steps); Home or double-clicking the grip resets its position.
+Dialogs start centered each time they open. A dialog may partly extend past the
+window edges, but its grip always stays inside the window so it can be dragged back.
+A drag ends as soon as the pointer leaves the browser window.
 
 ## Development
 
@@ -169,10 +190,10 @@ Run the bounded undo/redo history and bitmap-lifecycle regression tests:
 node --test src/lib/__tests__/useImageDocument.test.ts
 ```
 
-Run the editor top-bar rename and export-format tests:
+Run the export encoding, lifecycle, and editor top-bar rename tests:
 
 ```sh
-node --test src/components/editor/__tests__/EditorTopBar.test.ts
+node --test src/lib/__tests__/export.test.ts src/lib/__tests__/useImageDocument.test.ts src/components/editor/__tests__/EditorTopBar.test.ts
 ```
 
 ## Tech stack

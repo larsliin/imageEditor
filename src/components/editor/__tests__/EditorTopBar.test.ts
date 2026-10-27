@@ -140,7 +140,6 @@ function mountTopBar(
             busy,
             isDarkMode: false,
             onRename: (value: string) => emitted.push({ name: 'rename', value }),
-            'onExport-format-change': (value: string) => emitted.push({ name: 'export-format-change', value }),
             onToggleTheme: () => emitted.push({ name: 'toggle-theme' }),
         },
     );
@@ -149,7 +148,7 @@ function mountTopBar(
     context.after(() => {
         app.unmount();
     });
-    const filenameInput = findElement(root, 'aria-label', 'Filename without extension');
+    const filenameInput = findElement(root, 'aria-label', 'Filename');
     assert.ok(filenameInput, 'the filename input should render');
     return { emitted, root, filenameInput };
 }
@@ -162,12 +161,6 @@ function findElement(root: TestElement, property: string, value: string): TestEl
         if (match) return match;
     }
     return null;
-}
-
-function selectChangeEvent(currentTarget: object): Event {
-    const event = new Event('change');
-    Object.defineProperty(event, 'currentTarget', { value: currentTarget });
-    return event;
 }
 
 async function invokeHandler(element: TestElement, name: string, event: Event) {
@@ -226,9 +219,10 @@ test('starts renaming from the extensionless filename and focuses its input', as
         exportMimeType: 'image/png',
     });
 
-    assert.equal(filenameInput.value, 'family.photo');
+    assert.equal(filenameInput.value, 'family.photo.JPG');
     await invokeHandler(filenameInput, 'onClick', new Event('click'));
 
+    assert.equal(filenameInput.value, 'family.photo');
     assert.equal(filenameInput.props.readonly, false);
     assert.equal(filenameInput.focusCount, 1);
     assert.deepEqual(filenameInput.selectionRanges, [[0, 'family.photo'.length]]);
@@ -284,32 +278,21 @@ test('cancels renaming without validation or emitting and can restore input focu
 
     assert.equal(filenameInput.props.readonly, true);
     assert.equal(filenameInput.validityReportCount, 0);
+    assert.equal(filenameInput.value, 'original.png');
     assert.equal(filenameInput.focusCount, 2);
     assert.deepEqual(emitted, []);
 });
 
-test('emits supported export format changes from the select and ignores other targets', async (t) => {
-    const { emitted, root } = mountTopBar(t, {
+test('shows the full filename including extension without a format selector', (t) => {
+    const { filenameInput, root } = mountTopBar(t, {
         fileName: 'original.png',
         width: 400,
         height: 600,
         exportMimeType: 'image/png',
     });
-    const select = findElement(root, 'type', 'select');
-    assert.ok(select instanceof TestSelectElement);
-    select.value = 'image/jpeg';
-    await invokeHandler(select, 'onChange', selectChangeEvent(select));
-    select.value = 'image/png';
-    await invokeHandler(select, 'onChange', selectChangeEvent(select));
-
-    const invalidTarget = new Event('change');
-    Object.defineProperty(invalidTarget, 'currentTarget', { value: { value: 'image/webp' } });
-    await invokeHandler(select, 'onChange', invalidTarget);
-
-    assert.deepEqual(emitted, [
-        { name: 'export-format-change', value: 'image/jpeg' },
-        { name: 'export-format-change', value: 'image/png' },
-    ]);
+    assert.equal(filenameInput.value, 'original.png');
+    assert.equal(findElement(root, 'type', 'select'), null);
+    assert.equal(findElement(root, 'class', 'filename-extension-separator'), null);
 });
 
 test('emits the theme toggle event when its button is activated', async (t) => {
