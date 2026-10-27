@@ -1,8 +1,8 @@
 <script setup lang="ts">
-    import { computed, ref, shallowRef } from 'vue';
+    import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef } from 'vue';
     import { MAX_RESIZE_DIMENSION, dimensionForPercentage, heightForWidth, isValidResize, widthForHeight } from '@/lib/resize';
     import type { Size } from '@/lib/zoom';
-    import ToolModal from './ToolModal.vue';
+    import FloatingToolbar from './FloatingToolbar.vue';
 
     const props = defineProps<{
         image: Size
@@ -21,6 +21,19 @@
     const size = ref<InputDimensions>({ width: props.image.width, height: props.image.height });
     const percentages = ref<InputDimensions>({ width: 100, height: 100 });
     const lockRatio = shallowRef(true);
+    const widthInput = useTemplateRef<HTMLInputElement>('width-input');
+    let previousFocus: HTMLElement | null = null;
+
+    onMounted(() => {
+        previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        widthInput.value?.focus();
+    });
+
+    onBeforeUnmount(() => {
+        void nextTick(() => {
+            if (previousFocus?.isConnected) previousFocus.focus();
+        });
+    });
 
     const outputSize = computed(() => {
         const { width, height } = size.value;
@@ -36,14 +49,16 @@
     function percentageForDimension(dimension: Dimension): number | string {
         const value = size.value[dimension];
         return typeof value === 'number' && Number.isFinite(value) && value > 0
-            ? Number((value / props.image[dimension] * 100).toFixed(4))
+            ? Number((value / props.image[dimension] * 100).toFixed(1))
             : '';
     }
 
     function onDimensionInput(dimension: Dimension, unit: 'pixels' | 'percentage') {
         const other = dimension === 'width' ? 'height' : 'width';
         if (unit === 'percentage') {
-            const percentage = percentages.value[dimension];
+            const input = percentages.value[dimension];
+            const percentage = typeof input === 'number' ? Number(input.toFixed(1)) : input;
+            percentages.value[dimension] = percentage;
             size.value[dimension] = typeof percentage === 'number'
                 ? dimensionForPercentage(props.image[dimension], percentage) ?? ''
                 : '';
@@ -73,81 +88,100 @@
     function apply() {
         if (!props.disabled && outputSize.value && !unchanged.value) emit('apply', { ...outputSize.value });
     }
+
+    function cancel() {
+        if (!props.disabled) emit('cancel');
+    }
 </script>
 
 <template>
-    <ToolModal
-        title="Resize image"
-        apply-label="Apply resize"
-        :can-apply="valid && !unchanged"
-        :busy="disabled"
-        :error="error"
-        @apply="apply"
-        @cancel="emit('cancel')"
-    >
-        <div class="resize-controls">
-            <label class="dimension-label">
-                Width px
-                <input v-model.number="size.width" class="dimension-input" aria-label="Resize width" type="number" min="1"
-                    :max="MAX_RESIZE_DIMENSION" required step="1" autofocus @input="onDimensionInput('width', 'pixels')" />
-            </label>
-            <button
-                type="button"
-                class="lock-button"
-                :aria-pressed="lockRatio"
-                :aria-label="lockRatio ? 'Aspect ratio locked' : 'Aspect ratio unlocked'"
-                :title="lockRatio ? 'Unlock aspect ratio' : 'Lock aspect ratio'"
-                @click="toggleLock"
-            >
-                <i aria-hidden="true" class="bi" :class="lockRatio ? 'bi-lock-fill' : 'bi-unlock'"></i>
-            </button>
-            <label class="dimension-label">
-                Height px
-                <input v-model.number="size.height" class="dimension-input" aria-label="Resize height" type="number" min="1"
-                    :max="MAX_RESIZE_DIMENSION" required step="1" @input="onDimensionInput('height', 'pixels')" />
-            </label>
-            <label class="dimension-label">
-                Width %
-                <input v-model.number="percentages.width" class="dimension-input" aria-label="Resize width percentage"
-                    type="number" min="0" step="any" required @input="onDimensionInput('width', 'percentage')" />
-            </label>
-            <label class="dimension-label dimension-label--height-percentage">
-                Height %
-                <input v-model.number="percentages.height" class="dimension-input" aria-label="Resize height percentage"
-                    type="number" min="0" step="any" required @input="onDimensionInput('height', 'percentage')" />
-            </label>
-        </div>
-        <p v-if="!valid" class="validation-message" role="alert">
-            Enter whole-pixel dimensions between 1 and {{ MAX_RESIZE_DIMENSION }} px, or positive percentages within those bounds.
-        </p>
-    </ToolModal>
+    <Teleport defer to="#editor-tool-controls">
+        <FloatingToolbar label="Resize toolbar" @keydown.esc.stop.prevent="cancel">
+            <form class="resize-form" aria-label="Resize image" :aria-busy="disabled" @submit.prevent="apply">
+                <fieldset class="resize-controls" :disabled="disabled">
+                    <label class="dimension-label">
+                        Width px
+                        <input ref="width-input" v-model.number="size.width" class="dimension-input" aria-label="Resize width" type="number" min="1"
+                            :max="MAX_RESIZE_DIMENSION" required step="1" @input="onDimensionInput('width', 'pixels')" />
+                    </label>
+                    <label class="dimension-label">
+                        Height px
+                        <input v-model.number="size.height" class="dimension-input" aria-label="Resize height" type="number" min="1"
+                            :max="MAX_RESIZE_DIMENSION" required step="1" @input="onDimensionInput('height', 'pixels')" />
+                    </label>
+                    <span class="resize-divider" role="separator" aria-orientation="vertical"></span>
+                    <label class="dimension-label">
+                        Width %
+                        <input v-model.number="percentages.width" class="dimension-input" aria-label="Resize width percentage"
+                            type="number" min="0" step="0.1" required @input="onDimensionInput('width', 'percentage')" />
+                    </label>
+                    <label class="dimension-label">
+                        Height %
+                        <input v-model.number="percentages.height" class="dimension-input" aria-label="Resize height percentage"
+                            type="number" min="0" step="0.1" required @input="onDimensionInput('height', 'percentage')" />
+                    </label>
+                    <div class="resize-actions">
+                        <button
+                            type="button"
+                            class="resize-button lock-button"
+                            :aria-pressed="lockRatio"
+                            :aria-label="lockRatio ? 'Aspect ratio locked' : 'Aspect ratio unlocked'"
+                            :title="lockRatio ? 'Unlock aspect ratio' : 'Lock aspect ratio'"
+                            @click="toggleLock"
+                        >
+                            <i aria-hidden="true" class="bi" :class="lockRatio ? 'bi-lock-fill' : 'bi-unlock'"></i>
+                        </button>
+                        <span class="resize-divider" role="separator" aria-orientation="vertical"></span>
+                        <button type="submit" class="resize-button resize-button--apply" aria-label="Apply resize" title="Apply resize"
+                            :disabled="!valid || unchanged">
+                            <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="resize-button" aria-label="Cancel resize" title="Cancel resize" @click="cancel">
+                            <i class="bi bi-x-lg" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </fieldset>
+                <p v-if="!valid" class="validation-message" role="alert">
+                    Enter whole-pixel dimensions between 1 and {{ MAX_RESIZE_DIMENSION }} px, or positive percentages within those bounds.
+                </p>
+                <p v-if="error" class="validation-message" role="alert">{{ error }}</p>
+                <p v-if="disabled" class="resize-status" role="status">Processing image...</p>
+            </form>
+        </FloatingToolbar>
+    </Teleport>
 </template>
 
 <style scoped>
-.dimension-label--height-percentage {
-    grid-column: 3;
+.resize-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: max-content;
 }
 
 .resize-controls {
-    --label-gap: 6px;
-
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: end;
-    gap: 12px;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
 }
 
 .dimension-label {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     min-width: 0;
-    gap: var(--label-gap);
+    gap: 4px;
+    font-size: 12px;
 }
 
 .dimension-input,
-.lock-button {
-    min-height: 34px;
-    padding: 6px 10px;
+.resize-button {
+    height: 30px;
+    padding: 4px 8px;
     color: var(--color-text);
     background: var(--color-bg);
     border: 1px solid var(--color-border);
@@ -156,38 +190,12 @@
 }
 
 .dimension-input {
-    width: 100%;
+    width: 64px;
     min-width: 0;
-}
-
-.lock-button {
-    display: grid;
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    align-self: center;
-    /* Center between input edges, excluding the first row's label and label gap. */
-    translate: 0 calc((1lh + var(--label-gap)) / 2);
-    place-items: center;
-    width: 34px;
-    padding: 0;
-    background: var(--color-button-secondary);
-    border-color: var(--color-button-secondary-border);
-    border-radius: var(--radius-button);
-    cursor: pointer;
-}
-
-.lock-button:hover:not(:disabled) {
-    background: var(--color-button-secondary-hover);
-    border-color: var(--color-button-secondary-border-hover);
 }
 
 .lock-button[aria-pressed='true'] {
     border-color: var(--color-accent);
-}
-
-.lock-button:disabled {
-    opacity: var(--opacity-button-secondary-disabled);
-    cursor: not-allowed;
 }
 
 .dimension-input:focus-visible {
@@ -195,13 +203,63 @@
     outline-offset: 0;
 }
 
-.lock-button:focus-visible {
-    outline: 2px solid var(--color-focus);
-    outline-offset: -2px;
+.validation-message {
+    max-width: 600px;
+    white-space: normal;
+    color: #fecaca;
 }
 
-.validation-message {
-    margin-top: 12px;
-    color: #fecaca;
+.resize-status {
+    color: var(--color-text-muted);
+}
+
+.resize-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.resize-divider {
+    height: 24px;
+    border-left: 1px solid var(--color-border);
+}
+
+.resize-button {
+    width: 30px;
+    padding: 0;
+    background: var(--color-button-secondary);
+    border: 1px solid var(--color-button-secondary-border);
+    border-radius: var(--radius-button);
+    cursor: pointer;
+}
+
+.resize-button--apply {
+    color: #fff;
+    background: var(--color-accent);
+    border-color: transparent;
+}
+
+.resize-button:hover:not(:disabled) {
+    filter: brightness(1.15);
+}
+
+.resize-button:not(.resize-button--apply):hover:not(:disabled) {
+    background: var(--color-button-secondary-hover);
+    border-color: var(--color-button-secondary-border-hover);
+    filter: none;
+}
+
+.resize-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.resize-button:not(.resize-button--apply):disabled {
+    opacity: var(--opacity-button-secondary-disabled);
+}
+
+.resize-button:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
 }
 </style>

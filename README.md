@@ -32,16 +32,19 @@ reliable image-preview, import, and export workflow.
   tool changes. Holding Space through mouse release (including keyboard
   auto-repeat) or releasing Space does not cancel the throw.
   Reduced-motion preferences disable the throw effect.
-- **Resize** opens a modal with synchronized width and height fields in both
+- **Resize** opens a draggable toolbar with synchronized width and height fields in both
   pixels and percentages, visible together. Editing either unit updates the other.
-  The aspect-ratio lock is centered between both rows and is locked by default;
+  Fields appear in one row with the aspect-ratio lock beside the Apply and Cancel
+  icon buttons. The ratio is locked by default;
   unlock it to set dimensions independently in either unit. Percentages are relative
-  to the image size when the dialog opens (100%) and support fractional values.
+  to the image size when the toolbar opens (100%) and use at most one decimal place.
   Results are rounded to the
   nearest whole pixel, with a minimum of 1 pixel. Each side must be between 1
   and 16384 pixels. **Apply resize** or Enter applies
   the change; **Cancel** or Escape discards it. Processing failures are shown
-  inside the modal without discarding the entered dimensions.
+  inside the toolbar without discarding the entered dimensions. Like the crop
+  toolbar, drag its grip to reposition it, or focus the grip and use arrow keys
+  (Shift for larger steps). Home or double-clicking the grip resets its position.
 - **Download the edited image** at its full pixel resolution. PNG, JPEG, and WebP
   files are exported in their original format; other formats are exported as
   PNG. Downloading creates a new file and does not overwrite the source.
@@ -61,7 +64,12 @@ reliable image-preview, import, and export workflow.
 
 Levels and Curves are shown in the toolbar but are not implemented yet.
 
-Tool dialogs share `src/components/editor/ToolModal.vue`: provide a title,
+Crop and resize share the generic, slot-based
+`src/components/editor/FloatingToolbar.vue` container, mounted in the shared
+tool-controls area. Each tool owns its fields, validation, and actions; the
+container only handles positioning and pointer/keyboard movement.
+
+Color tool dialogs share `src/components/editor/ToolModal.vue`: provide a title,
 apply label, validity, busy/error state, and tool-specific fields through its
 default slot. It emits `apply` and `cancel` and handles modal focus, keyboard
 navigation, and shared actions. Mount it conditionally while the tool is open.
