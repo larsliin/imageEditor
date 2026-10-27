@@ -64,6 +64,9 @@
 
 <template>
     <header class="top-bar">
+        <div class="top-bar__brand" aria-hidden="true">
+            <img class="top-bar__logo" src="/favicon.svg" alt="" />
+        </div>
         <dl class="document-details">
             <div class="document-detail document-detail--file">
                 <dt><i class="bi bi-file-earmark-image" aria-hidden="true"></i><span>File</span></dt>
@@ -117,12 +120,26 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px 16px;
+    gap: 0;
     height: 48px;
     overflow-x: auto;
-    padding: 0 12px;
+    padding: 0 12px 0 0;
     background-color: var(--color-panel);
     border-bottom: 1px solid var(--color-border);
+}
+
+.top-bar__brand {
+    display: grid;
+    flex: 0 0 48px;
+    place-items: center;
+    align-self: stretch;
+    border-right: 1px solid var(--color-border);
+}
+
+.top-bar__logo {
+    display: block;
+    width: 28px;
+    height: 28px;
 }
 
 .document-details {
@@ -131,6 +148,7 @@
     align-items: center;
     gap: 16px;
     min-width: 0;
+    margin-left: 12px;
 }
 
 .theme-toggle {
