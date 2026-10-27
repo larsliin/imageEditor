@@ -95,6 +95,45 @@ npm run dev
 npm run build
 ```
 
+## Chrome extension (Manifest V3)
+
+Build a dedicated unpacked Chrome extension with type-checking:
+
+```sh
+npm run build:extension
+```
+
+1. Run `npm run build:extension`.
+2. Open `chrome://extensions` and enable **Developer mode**.
+3. Click **Load unpacked** and select the generated `dist-extension` folder (not the
+   project root or `public` folder).
+4. Pin **Image Editor** and click its toolbar button to open the editor in a
+   full browser tab. Each click opens a new editor tab.
+
+The manifest and toolbar service worker live in `public/manifest.json` and
+`public/background.js`; Vite copies them into `dist-extension` unchanged. The production
+build uses relative asset paths and excludes Vue DevTools. After rebuilding,
+reload the extension on `chrome://extensions` and reopen the editor tab.
+The extension output is ignored by Git and kept separate from the regular
+`npm run build` output in `dist`.
+
+The body explicitly inherits the app's root typography so Chromium's injected
+extension-page font defaults do not shrink inherited text compared with localhost.
+
+No Chrome API or website permissions are requested. Import uses a user-selected
+file, export uses a normal browser download, and opening an editor tab does not
+require the `tabs` permission. There are no content scripts or website access.
+The extension content security policy permits only packaged scripts and
+disables embedded objects; it does not allow inline JavaScript or `eval`.
+All image processing remains local.
+
+Extension icons use the same design as `public/favicon.svg`, rasterized to PNG
+at 16, 32, 48, and 128 pixels for the toolbar and extension manager.
+
+This is the initial unpacked-extension setup, not a Chrome Web Store release.
+Before publishing, update the version in `public/manifest.json` alongside
+`package.json`.
+
 ## Tests
 
 Run the crop-coordinate and zoom tests with Node.js 22.18 or later:

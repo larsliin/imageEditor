@@ -56,6 +56,8 @@ body,
 }
 
 body {
+    /* Override the browser's injected extension-page typography. */
+    font: inherit;
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
 }
