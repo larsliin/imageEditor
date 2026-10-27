@@ -140,6 +140,11 @@
     display: block;
     width: 28px;
     height: 28px;
+    opacity: 0.88;
+}
+
+:global(:root[data-theme='light'] .top-bar__logo) {
+    opacity: 0.62;
 }
 
 .document-details {
