@@ -35,6 +35,32 @@
     );
 
     const activeTool = ref<ToolId | null>(null);
+    const isDarkMode = ref(true);
+    const themeStorageKey = 'image-editor-theme';
+
+    try {
+        const savedTheme = localStorage.getItem(themeStorageKey);
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+            isDarkMode.value = savedTheme === 'dark';
+        } else if (savedTheme !== null) {
+            console.warn('Ignoring an invalid saved theme preference:', savedTheme);
+        }
+    } catch (error) {
+        console.warn('Unable to restore the saved theme preference:', error);
+    }
+
+    document.documentElement.dataset.theme = isDarkMode.value ? 'dark' : 'light';
+
+    function toggleTheme() {
+        isDarkMode.value = !isDarkMode.value;
+        const theme = isDarkMode.value ? 'dark' : 'light';
+        document.documentElement.dataset.theme = theme;
+        try {
+            localStorage.setItem(themeStorageKey, theme);
+        } catch (error) {
+            console.warn('Unable to save the theme preference:', error);
+        }
+    }
 
     function selectTool(tool: ToolId) {
         if (isBusy.value) return;
@@ -83,8 +109,10 @@
             class="editor__top-bar"
             :image="info"
             :busy="isBusy"
+            :is-dark-mode="isDarkMode"
             @rename="renameImage"
             @export-format-change="setExportMimeType"
+            @toggle-theme="toggleTheme"
         />
         <EditorToolRail
             class="editor__tool-rail"

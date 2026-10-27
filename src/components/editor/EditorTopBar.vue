@@ -6,11 +6,13 @@
     const props = defineProps<{
         image: ImageInfo | null
         busy: boolean
+        isDarkMode: boolean
     }>();
 
     const emit = defineEmits<{
         rename: [fileName: string]
         'export-format-change': [mimeType: ExportMimeType]
+        'toggle-theme': []
     }>();
 
     const isEditing = shallowRef(false);
@@ -99,6 +101,15 @@
                 </dd>
             </div>
         </dl>
+        <button
+            class="theme-toggle"
+            type="button"
+            :aria-label="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+            :title="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+            @click="emit('toggle-theme')"
+        >
+            <i :class="isDarkMode ? 'bi bi-sun' : 'bi bi-moon'" aria-hidden="true"></i>
+        </button>
     </header>
 </template>
 
@@ -106,6 +117,7 @@
 .top-bar {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 8px 16px;
     height: 48px;
     overflow-x: auto;
@@ -120,6 +132,31 @@
     align-items: center;
     gap: 16px;
     min-width: 0;
+}
+
+.theme-toggle {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    margin-left: auto;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    color: var(--color-text-muted);
+    background-color: var(--color-panel-raised);
+    cursor: pointer;
+}
+
+.theme-toggle:hover {
+    color: var(--color-text);
+    background-color: var(--color-hover);
+}
+
+.theme-toggle:focus-visible {
+    outline: 1px solid var(--color-focus);
+    outline-offset: 1px;
 }
 
 .document-detail {

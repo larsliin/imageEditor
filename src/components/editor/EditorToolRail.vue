@@ -192,7 +192,6 @@
 .tool-button.is-active {
     background-color: var(--color-active);
     border-color: var(--color-accent);
-    color: #fff;
 }
 
 .tool-button:focus-visible {

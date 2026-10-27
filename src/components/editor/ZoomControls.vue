@@ -68,7 +68,7 @@
     gap: 2px;
     padding: 2px;
     font-size: 12px;
-    background-color: rgb(43 43 43 / 85%);
+    background-color: color-mix(in srgb, var(--color-panel) 85%, transparent);
     border: 1px solid var(--color-border);
     border-radius: 4px;
 }
