@@ -1,8 +1,8 @@
 # Image Editor
 
-A browser-based image editor for making straightforward edits without sending
-images to a server. The current working version focuses on cropping and on a
-reliable image-preview, import, and export workflow.
+A browser-based image editor for cropping, resizing, rotating, and adjusting
+images locally in your browser. Use it as a web app or load the optional
+unpacked Chrome extension to open the editor from the browser toolbar.
 
 ## Current features
 
@@ -49,29 +49,37 @@ reliable image-preview, import, and export workflow.
   90-degree preview buttons, followed by Apply and Cancel icons. Apply commits
   the rotation as one undoable edit; Cancel, Escape, or switching tools discards
   the preview. Four quarter-turns return to the unchanged image.
+- **Levels** adjusts the black point, midtone gamma, and white point with a
+  luminosity histogram. Adjustments can be previewed, applied, or cancelled.
+- **Curves** adjusts the composite RGB curve or individual red, green, and blue
+  channels. Add and move curve points on the graph, edit a selected point with
+  the keyboard or numeric fields, and preview or cancel before applying.
+- **Color mode** converts an image to grayscale or to a black-and-white bitmap
+  using a 50% threshold. Grayscale preserves transparency; bitmap conversion
+  composites transparent pixels onto white and preserves the selected export format.
+- **Switch between dark and light themes** with the theme button. The choice is
+  saved locally in the browser.
 - **Download the edited image** at its full pixel resolution. PNG, JPEG, and WebP
-  files are exported in their original format; other formats are exported as
-  PNG. Downloading creates a new file and does not overwrite the source.
+  are supported; other source formats default to PNG. Downloads create
+  a new file and do not overwrite the source. JPEG downloads use lossy
+  compression.
 - **Rename the image** with the pen icon next to the filename. Press Enter or
   click away to save, or Escape to cancel. The input sizes to its content up to
   32rem (or 40% of the viewport). Downloads use the new name with the extension
-  matching the export format. Renaming does not change the source file, and
-  resetting image edits keeps the chosen name.
-- **Reset to original** to discard edits and restore the imported image.
+  matching the export format. Renaming changes only the download name, not the
+  source file.
 - **Undo and redo** from the left toolbar. History keeps only the last three
-  applied edits, including reset, filename, and export-format changes. Unapplied
-  previews do not count. A new edit after undo clears redo; opening another image
-  clears all history. Discarded history bitmaps are released to limit memory use.
+  applied edits, including image edits, filename, and export-format changes.
+  Unapplied previews do not count. A new edit after undo clears redo; opening
+  another image clears all history. Discarded history bitmaps are released to
+  limit memory use.
 - **Unsaved-edit protection** warns before opening another image or leaving the
   page if edits have not been downloaded. The browser cannot confirm whether a
   download finishes.
 
-Levels and Curves are shown in the toolbar but are not implemented yet.
-
-Crop, resize, and rotate share the generic, slot-based
-`src/components/editor/FloatingToolbar.vue` container, mounted in the shared
-tool-controls area. Each tool owns its fields, validation, and actions; the
-container only handles positioning and pointer/keyboard movement.
+Previews are temporary until applied. Cancel or Escape discards the current
+tool's preview; applied edits are undoable. There is not currently a command to
+reset the entire document to the imported image.
 
 Color tool dialogs share `src/components/editor/ToolModal.vue`: provide a title,
 apply label, validity, busy/error state, and tool-specific fields through its
@@ -108,7 +116,8 @@ npm run build:extension
 3. Click **Load unpacked** and select the generated `dist-extension` folder (not the
    project root or `public` folder).
 4. Pin **Image Editor** and click its toolbar button to open the editor in a
-   full browser tab. Each click opens a new editor tab.
+   full browser tab. Each click opens a new editor tab. Import an image with the
+   editor's file picker; the extension does not interact with images on websites.
 
 The manifest and toolbar service worker live in `public/manifest.json` and
 `public/background.js`; Vite copies them into `dist-extension` unchanged. The production
@@ -135,6 +144,12 @@ Before publishing, update the version in `public/manifest.json` alongside
 `package.json`.
 
 ## Tests
+
+Run the Levels, Curves, and color-mode processing tests with Node.js 22.18 or later:
+
+```sh
+node --test src/lib/__tests__/levels.test.ts src/lib/__tests__/curves.test.ts src/lib/__tests__/colorMode.test.ts
+```
 
 Run the crop-coordinate and zoom tests with Node.js 22.18 or later:
 

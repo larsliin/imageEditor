@@ -1,15 +1,14 @@
 import { applyLevelsToPixels, type LevelsParams } from './levels';
 import { applyCurvesToPixels, type CurvesParams } from './curves';
-import { applyColorModeToPixels, encodeBmp, type ColorMode } from './colorMode';
+import { applyColorModeToPixels, type ColorMode } from './colorMode';
 import { drawRotatedImage, rotatedSize, type QuarterTurns } from './rotate';
 
-export type ExportMimeType = 'image/png' | 'image/jpeg' | 'image/webp' | 'image/bmp';
+export type ExportMimeType = 'image/png' | 'image/jpeg' | 'image/webp';
 
 const EXPORT_EXTENSIONS: Record<ExportMimeType, string> = {
     'image/png': 'png',
     'image/jpeg': 'jpg',
     'image/webp': 'webp',
-    'image/bmp': 'bmp',
 };
 
 const LOSSY_EXPORT_QUALITY = 0.92;
@@ -147,18 +146,6 @@ export async function colorModeImageBitmap(source: ImageBitmap, mode: ColorMode)
 }
 
 export function canvasToBlob(canvas: HTMLCanvasElement, mimeType: ExportMimeType): Promise<Blob> {
-    if (mimeType === 'image/bmp') {
-        // Browsers can't encode BMP via toBlob, so encode it manually.
-        const context = canvas.getContext('2d');
-        if (!context) return Promise.reject(new Error('Canvas 2D rendering is not available in this browser.'));
-        const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
-        try {
-            const bytes = encodeBmp(data, canvas.width, canvas.height);
-            return Promise.resolve(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: mimeType }));
-        } catch (e) {
-            return Promise.reject(e instanceof Error ? e : new Error('The image could not be encoded.'));
-        }
-    }
     const quality = mimeType === 'image/png' ? undefined : LOSSY_EXPORT_QUALITY;
     return new Promise((resolve, reject) => {
         canvas.toBlob(

@@ -41,7 +41,7 @@
         if (!isEditing.value) return;
         if (!cancel) {
             const input = filenameInput.value;
-            const name = draftName.value.trim().replace(/\.(?:jpe?g|png|bmp)$/i, '');
+            const name = draftName.value.trim().replace(/\.(?:jpe?g|png|webp)$/i, '');
             input?.setCustomValidity(name ? '' : 'Enter a filename without an extension.');
             if (input && !input.reportValidity()) return;
             emit('rename', name);
@@ -56,7 +56,7 @@
     function updateExportFormat(event: Event) {
         const select = event.currentTarget;
         if (!(select instanceof HTMLSelectElement)) return;
-        if (select.value === 'image/jpeg' || select.value === 'image/png' || select.value === 'image/bmp') {
+        if (select.value === 'image/jpeg' || select.value === 'image/png') {
             emit('export-format-change', select.value);
         }
     }
@@ -94,9 +94,8 @@
                         :disabled="busy || !image"
                         @change="updateExportFormat"
                     >
-                        <option value="image/jpeg" :disabled="image.exportMimeType === 'image/bmp'">JPG</option>
-                        <option value="image/png" :disabled="image.exportMimeType === 'image/bmp'">PNG</option>
-                        <option value="image/bmp" :disabled="image.exportMimeType !== 'image/bmp'">BMP</option>
+                        <option value="image/jpeg">JPG</option>
+                        <option value="image/png">PNG</option>
                     </select>
                 </dd>
             </div>

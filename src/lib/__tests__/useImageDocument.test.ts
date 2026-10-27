@@ -226,7 +226,8 @@ test('crop, rotation, levels, curves and color-mode edits restore exact bitmap r
         rgb: [{ x: 0, y: 0 }, { x: 128, y: 160 }, { x: 255, y: 255 }],
     }));
     await applyAndRestore(() => editor.colorModeImage('bitmap'));
-    assert.equal(editor.info.value?.exportMimeType, 'image/bmp');
+    assert.equal(editor.info.value?.exportMimeType, 'image/png');
+    assert.equal(editor.info.value?.fileName, 'landscape.png');
     editor.undo();
     assert.equal(editor.info.value?.exportMimeType, 'image/png');
     assert.equal(editor.info.value?.fileName, 'landscape.png');

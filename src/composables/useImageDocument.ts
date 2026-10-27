@@ -314,12 +314,9 @@ export function useImageDocument() {
                 converted.close();
                 return false;
             }
-            const exportMimeType: ExportMimeType = mode === 'bitmap' ? 'image/bmp' : doc.exportMimeType;
             commitEdit({
                 ...doc,
                 bitmap: converted,
-                exportMimeType,
-                fileName: exportFileName(doc.fileName, exportMimeType),
             });
             return true;
         } catch (e) {
