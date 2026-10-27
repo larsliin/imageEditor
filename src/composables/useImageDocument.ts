@@ -139,22 +139,22 @@ export function useImageDocument() {
         current.value = next;
     }
 
-    async function importImage() {
+    async function importImage(file?: File) {
         if (isBusy.value) return;
-        const file = await pickImageFile();
-        if (!file || isBusy.value || disposed) return;
+        const selectedFile = file ?? await pickImageFile();
+        if (!selectedFile || isBusy.value || disposed) return;
         if (isDirty.value && !window.confirm('Discard unsaved changes and open another image?')) return;
 
         status.value = 'loading';
         error.value = null;
         try {
-            const decoded = await decodeImageFile(file);
+            const decoded = await decodeImageFile(selectedFile);
             if (disposed) {
                 decoded.close();
                 return;
             }
-            const exportMimeType = resolveExportMimeType(file.type);
-            const fileName = exportFileName(file.name, exportMimeType);
+            const exportMimeType = resolveExportMimeType(selectedFile.type);
+            const fileName = exportFileName(selectedFile.name, exportMimeType);
             replaceDocument({ original: decoded, bitmap: decoded, fileName, exportMimeType });
             documentId.value += 1;
             revision.value = 0;

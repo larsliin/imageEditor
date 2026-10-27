@@ -24,7 +24,7 @@
     }>();
 
     const emit = defineEmits<{
-        import: []
+        import: [file?: File]
         'dismiss-error': []
         'viewport-resize': [size: Size]
         crop: [crop: CropRect, angle: number]
@@ -32,6 +32,35 @@
         'zoom-in': []
         'zoom-out': []
     }>();
+
+    const isDropActive = ref(false);
+    let dragDepth = 0;
+
+    function handleDragEnter(event: DragEvent) {
+        event.preventDefault();
+        dragDepth += 1;
+        isDropActive.value = true;
+    }
+
+    function handleDragOver(event: DragEvent) {
+        event.preventDefault();
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+    }
+
+    function handleDragLeave(event: DragEvent) {
+        event.preventDefault();
+        dragDepth = Math.max(0, dragDepth - 1);
+        isDropActive.value = dragDepth > 0;
+    }
+
+    function handleDrop(event: DragEvent) {
+        event.preventDefault();
+        dragDepth = 0;
+        isDropActive.value = false;
+        if (props.bitmap) return;
+        const file = event.dataTransfer?.files[0];
+        if (file) emit('import', file);
+    }
 
     const cropAngle = ref(0);
     watch(() => props.cropEnabled, () => {
@@ -176,10 +205,18 @@
         <div
             ref="viewport"
             class="viewport"
-            :class="{ 'is-pan-mode': isPanMode, 'is-dragging': isDragging }"
+            :class="{
+                'is-pan-mode': isPanMode,
+                'is-dragging': isDragging,
+                'is-drop-active': !bitmap && isDropActive,
+            }"
             :tabindex="bitmap ? 0 : undefined"
             :aria-label="bitmap ? 'Image viewport, use arrow keys to pan' : undefined"
             @wheel="handleWheel"
+            @dragenter="handleDragEnter"
+            @dragover="handleDragOver"
+            @dragleave="handleDragLeave"
+            @drop="handleDrop"
         >
             <p v-if="loading" class="status-message" role="status">
                 <i class="bi bi-hourglass-split" aria-hidden="true"></i>
@@ -210,15 +247,12 @@
             </div>
             <div v-else class="empty-state">
                 <div class="empty-state__icon" aria-hidden="true">
-                    <i class="bi bi-image"></i>
+                    <i class="bi bi-cloud-arrow-up"></i>
                 </div>
-                <h1 class="empty-state__title">Import an image to get started</h1>
-                <p class="empty-state__description">
-                    Crop, resize, and adjust it right here.
-                </p>
+                <h1 class="empty-state__title">Drop an image</h1>
                 <button type="button" class="import-button" @click="emit('import')">
                     <i class="bi bi-folder2-open" aria-hidden="true"></i>
-                    <span>Import image</span>
+                    <span>Choose an image</span>
                 </button>
             </div>
         </div>
@@ -309,44 +343,46 @@
 }
 
 .empty-state {
-    width: min(100%, 440px);
-    padding: 36px 28px;
-    gap: 16px;
+    width: min(100%, 400px);
+    aspect-ratio: 1;
+    padding: 40px 28px;
+    gap: 20px;
+    justify-content: center;
     text-align: center;
     background-color: var(--color-panel);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
+    border: 1px dashed var(--color-border);
+    border-radius: 16px;
+    transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.viewport.is-drop-active .empty-state {
+    background-color: color-mix(in srgb, var(--color-accent) 8%, var(--color-panel));
+    border-color: var(--color-focus);
 }
 
 .empty-state__icon {
     display: grid;
     place-items: center;
-    width: 64px;
-    height: 64px;
+    width: 60px;
+    height: 60px;
     color: var(--color-focus);
-    font-size: 30px;
+    font-size: 32px;
     background-color: rgb(96 165 250 / 12%);
-    border-radius: 16px;
+    border-radius: 18px;
 }
 
 .empty-state__title {
     color: var(--color-text);
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 600;
     line-height: 1.3;
-}
-
-.empty-state__description {
-    max-width: 30ch;
-    font-size: 14px;
-    line-height: 1.6;
 }
 
 .import-button {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 18px;
+    padding: 10px 16px;
     color: #fff;
     background-color: var(--color-accent);
     border: 1px solid transparent;

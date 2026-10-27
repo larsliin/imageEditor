@@ -101,6 +101,16 @@ function setup(t: TestContext) {
     };
 }
 
+test('imports a provided file without opening the picker', async (t) => {
+    const { editor } = setup(t);
+    const file = Object.assign(new File([], 'dropped.png', { type: 'image/png' }), { width: 80, height: 40 });
+
+    await editor.importImage(file);
+
+    assert.equal(editor.info.value?.fileName, 'dropped.png');
+    assert.deepEqual([editor.bitmap.value?.width, editor.bitmap.value?.height], [80, 40]);
+});
+
 test('only the last three edits can be undone and all three can be redone', async (t) => {
     const { editor, bitmaps } = setup(t);
     assert.equal(editor.canUndo.value, false);
