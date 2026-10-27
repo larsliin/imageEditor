@@ -9,8 +9,8 @@ import {
 } from '../lib/zoom.ts';
 
 /**
- * Zoom state for the image preview. Starts in "fit" mode (follows viewport size)
- * and switches to a fixed zoom level once the user zooms in or out.
+ * Starts in fit mode capped at 100%. Explicit fit allows enlargement; manual
+ * zoom switches to a fixed level.
  */
 export function useZoom(
     imageSize: Ref<Size | null>,
@@ -18,12 +18,15 @@ export function useZoom(
     sourceId: Ref<number>,
 ) {
     const isFit = ref(true);
+    const capInitialFit = ref(true);
     const manualZoom = ref(1);
 
     const fit = computed(() =>
         imageSize.value ? fitZoom(imageSize.value, viewportSize.value) : 1,
     );
-    const zoom = computed(() => (isFit.value ? fit.value : manualZoom.value));
+    const zoom = computed(() => (
+        isFit.value ? (capInitialFit.value ? Math.min(1, fit.value) : fit.value) : manualZoom.value
+    ));
     const canZoomIn = computed(() => imageSize.value !== null && canZoomInFrom(zoom.value));
     const canZoomOut = computed(() => imageSize.value !== null && canZoomOutFrom(zoom.value));
 
@@ -41,6 +44,7 @@ export function useZoom(
     }
 
     function fitToView() {
+        capInitialFit.value = false;
         isFit.value = true;
     }
 
@@ -49,7 +53,10 @@ export function useZoom(
     }
 
     watch([imageSize, sourceId], ([nextSize, nextSourceId], [previousSize, previousSourceId]) => {
-        if (nextSourceId !== previousSourceId || !nextSize || !previousSize) fitToView();
+        if (nextSourceId !== previousSourceId || !nextSize || !previousSize) {
+            capInitialFit.value = true;
+            isFit.value = true;
+        }
     });
 
     return { zoom, isFit, canZoomIn, canZoomOut, zoomIn, zoomOut, fitToView, actualSize };

@@ -34,11 +34,8 @@
     }>();
 
     const isDropActive = ref(false);
-    let dragDepth = 0;
-
     function handleDragEnter(event: DragEvent) {
         event.preventDefault();
-        dragDepth += 1;
         isDropActive.value = true;
     }
 
@@ -49,15 +46,15 @@
 
     function handleDragLeave(event: DragEvent) {
         event.preventDefault();
-        dragDepth = Math.max(0, dragDepth - 1);
-        isDropActive.value = dragDepth > 0;
+        const workspace = event.currentTarget;
+        if (workspace instanceof HTMLElement && event.relatedTarget instanceof Node
+            && workspace.contains(event.relatedTarget)) return;
+        isDropActive.value = false;
     }
 
     function handleDrop(event: DragEvent) {
         event.preventDefault();
-        dragDepth = 0;
         isDropActive.value = false;
-        if (props.bitmap) return;
         const file = event.dataTransfer?.files[0];
         if (file) emit('import', file);
     }
@@ -193,7 +190,15 @@
 </script>
 
 <template>
-    <main class="workspace" :aria-busy="busy">
+    <main
+        class="workspace"
+        :class="{ 'is-drop-active': isDropActive }"
+        :aria-busy="busy"
+        @dragenter="handleDragEnter"
+        @dragover="handleDragOver"
+        @dragleave="handleDragLeave"
+        @drop="handleDrop"
+    >
         <div v-if="error" class="error-banner" role="alert">
             <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
             <span>{{ error }}</span>
@@ -208,15 +213,10 @@
             :class="{
                 'is-pan-mode': isPanMode,
                 'is-dragging': isDragging,
-                'is-drop-active': !bitmap && isDropActive,
             }"
             :tabindex="bitmap ? 0 : undefined"
             :aria-label="bitmap ? 'Image viewport, use arrow keys to pan' : undefined"
             @wheel="handleWheel"
-            @dragenter="handleDragEnter"
-            @dragover="handleDragOver"
-            @dragleave="handleDragLeave"
-            @drop="handleDrop"
         >
             <p v-if="loading" class="status-message" role="status">
                 <i class="bi bi-hourglass-split" aria-hidden="true"></i>
@@ -246,16 +246,19 @@
                 />
             </div>
             <div v-else class="empty-state">
-                <div class="empty-state__icon" aria-hidden="true">
-                    <i class="bi bi-cloud-arrow-up"></i>
-                </div>
-                <h1 class="empty-state__title">Drop an image</h1>
+                <h1 class="empty-state__headline">Simple image editing</h1>
+                <p class="empty-state__intro">
+                    A simple editor to crop, resize, and adjust image colors.
+                </p>
                 <button type="button" class="import-button" @click="emit('import')">
-                    <i class="bi bi-folder2-open" aria-hidden="true"></i>
-                    <span>Choose an image</span>
+                    <span>Open image</span>
                 </button>
+                <span class="empty-state__separator">or</span>
+                <p class="empty-state__title">Drop an image</p>
             </div>
         </div>
+
+        <div v-if="isDropActive" class="drop-indicator" aria-hidden="true"></div>
 
         <slot v-if="bitmap && !loading" name="overlay" />
     </main>
@@ -343,36 +346,49 @@
 }
 
 .empty-state {
-    width: min(100%, 400px);
-    aspect-ratio: 1;
-    padding: 40px 28px;
-    gap: 20px;
+    gap: 12px;
     justify-content: center;
     text-align: center;
-    background-color: var(--color-panel);
-    border: 1px dashed var(--color-border);
-    border-radius: 16px;
-    transition: border-color 160ms ease, background-color 160ms ease;
 }
 
-.viewport.is-drop-active .empty-state {
-    background-color: color-mix(in srgb, var(--color-accent) 8%, var(--color-panel));
-    border-color: var(--color-focus);
+.empty-state__headline {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.25;
 }
 
-.empty-state__icon {
-    display: grid;
-    place-items: center;
-    width: 60px;
-    height: 60px;
+.empty-state__intro {
+    max-width: 28rem;
+    margin: 0 0 20px;
+    line-height: 1.5;
+}
+
+.workspace.is-drop-active .empty-state__title {
     color: var(--color-focus);
-    font-size: 32px;
-    background-color: rgb(96 165 250 / 12%);
-    border-radius: 18px;
+}
+
+.drop-indicator {
+    position: absolute;
+    inset: 12px;
+    z-index: 2;
+    border: 2px dashed var(--color-focus);
+    background-color: color-mix(in srgb, var(--color-focus) 8%, transparent);
+    pointer-events: none;
+}
+
+.empty-state__separator,
+.empty-state__title {
+    color: var(--color-text-muted);
+}
+
+.empty-state__separator {
+    font-size: 14px;
 }
 
 .empty-state__title {
-    color: var(--color-text);
+    margin: 0;
     font-size: 18px;
     font-weight: 600;
     line-height: 1.3;
