@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { computed, ref, watch } from 'vue';
+    import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import EditorTopBar from './components/editor/EditorTopBar.vue';
     import EditorToolRail from './components/editor/EditorToolRail.vue';
     import EditorCanvas from './components/editor/EditorCanvas.vue';
@@ -108,6 +108,36 @@
     watch(bitmap, () => {
         activeTool.value = null;
     });
+
+    function handleEditorShortcut(event: KeyboardEvent) {
+        if (!event.ctrlKey || event.altKey || event.metaKey) return;
+        const target = event.target;
+        if (
+            target instanceof HTMLElement
+            && (target.isContentEditable
+                || target instanceof HTMLInputElement
+                || target instanceof HTMLTextAreaElement
+                || target instanceof HTMLSelectElement)
+        ) return;
+
+        const key = event.key.toLowerCase();
+        if (key === '+' || key === '=') {
+            event.preventDefault();
+            if (canZoomIn.value) zoomIn();
+        } else if (key === '-') {
+            event.preventDefault();
+            if (canZoomOut.value) zoomOut();
+        } else if (key === 'z' && !event.shiftKey) {
+            event.preventDefault();
+            if (canUndo.value) undo();
+        } else if (key === 'y' || (key === 'z' && event.shiftKey)) {
+            event.preventDefault();
+            if (canRedo.value) redo();
+        }
+    }
+
+    onMounted(() => window.addEventListener('keydown', handleEditorShortcut));
+    onBeforeUnmount(() => window.removeEventListener('keydown', handleEditorShortcut));
 </script>
 
 <template>

@@ -58,7 +58,7 @@
                 type="button"
                 class="tool-button"
                 aria-label="Undo"
-                title="Undo last edit (up to 3 edits)"
+                title="Undo last edit (Ctrl+Z)"
                 :disabled="!hasImage || busy || !canUndo"
                 @click="emit('undo')"
             >
@@ -68,7 +68,7 @@
                 type="button"
                 class="tool-button"
                 aria-label="Redo"
-                title="Redo last undone edit"
+                title="Redo last undone edit (Ctrl+Y or Ctrl+Shift+Z)"
                 :disabled="!hasImage || busy || !canRedo"
                 @click="emit('redo')"
             >
@@ -104,7 +104,7 @@
                 type="button"
                 class="tool-button"
                 aria-label="Zoom in"
-                title="Zoom in"
+                title="Zoom in (Ctrl++)"
                 :disabled="!canZoomIn"
                 @click="emit('zoom-in')"
             >
@@ -114,7 +114,7 @@
                 type="button"
                 class="tool-button"
                 aria-label="Zoom out"
-                title="Zoom out"
+                title="Zoom out (Ctrl+-)"
                 :disabled="!canZoomOut"
                 @click="emit('zoom-out')"
             >
