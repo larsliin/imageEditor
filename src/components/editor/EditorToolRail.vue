@@ -3,6 +3,7 @@
     import UndoIcon from '@/components/icons/UndoIcon.vue';
     import RedoIcon from '@/components/icons/RedoIcon.vue';
     import CurvesIcon from '@/components/icons/CurvesIcon.vue';
+    import PanIcon from '@/components/icons/PanIcon.vue';
 
     defineProps<{
         activeTool: ToolId | null
@@ -141,7 +142,7 @@
                 :disabled="!hasImage || busy"
                 @click="emit('select-tool', PAN_TOOL.id)"
             >
-                <i class="bi" :class="PAN_TOOL.icon" aria-hidden="true"></i>
+                <PanIcon />
             </button>
         </div>
     </nav>
