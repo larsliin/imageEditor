@@ -11,6 +11,7 @@ import { largestCropInsideRotatedImage, type CropRect } from '../crop.ts';
 const source = await readFile(new URL('../../components/editor/CropOverlay.vue', import.meta.url), 'utf8');
 const { descriptor } = parse(source);
 const script = compileScript(descriptor, { id: 'crop-overlay-test' }).content
+    .replace("import CropControls from './CropControls.vue';", 'const CropControls = {};')
     .replace('__expose();', '')
     .replace('return __returned__', '__expose(__returned__); return __returned__');
 const compiled = transpileModule(script, { compilerOptions: { module: ModuleKind.ESNext } }).outputText

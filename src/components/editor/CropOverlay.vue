@@ -1,8 +1,8 @@
 <script setup lang="ts">
     import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue';
-    import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, isValidCrop, previewToImagePoint, isCropInsideRotatedImage, isValidAngle, largestCropInsideRotatedImage, MAX_STRAIGHTEN_ANGLE, type CropRect, type CropHandle, type Point } from '@/lib/crop';
+    import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, isValidCrop, previewToImagePoint, isCropInsideRotatedImage, isValidAngle, largestCropInsideRotatedImage, type CropRect, type CropHandle, type Point } from '@/lib/crop';
     import type { Size } from '@/lib/zoom';
-    import FloatingToolbar from './FloatingToolbar.vue';
+    import CropControls from './CropControls.vue';
 
     const props = defineProps<{
         image: Size
@@ -174,12 +174,6 @@
         }, props.image, event.shiftKey);
     }
 
-    function zeroIfEmpty(event: FocusEvent, field: keyof CropRect | 'angle') {
-        if ((event.target as HTMLInputElement).value !== '') return;
-        if (field === 'angle') angle.value = 0;
-        else crop.value[field] = 0;
-    }
-
     function onFormInput(event: Event) {
         const label = (event.target as HTMLElement).getAttribute('aria-label') ?? '';
         if (label.startsWith('Crop ')) autoCrop = false;
@@ -232,47 +226,19 @@
             </template>
         </div>
     </div>
-    <Teleport defer to="#editor-tool-controls">
-        <FloatingToolbar label="Crop toolbar">
-            <form class="crop-controls" aria-label="Crop controls" @submit.prevent="apply" @input="onFormInput" @keydown.esc.prevent="emit('cancel')">
-                <fieldset :disabled="disabled || dragging">
-                    <div class="crop-fields">
-                        <label>X <input v-model.number="crop.x" aria-label="Crop X" type="number" min="0"
-                            :max="image.width - 1" required step="1" @blur="zeroIfEmpty($event, 'x')" /></label>
-                        <label>Y <input v-model.number="crop.y" aria-label="Crop Y" type="number" min="0"
-                            :max="image.height - 1" required step="1" @blur="zeroIfEmpty($event, 'y')" /></label>
-                        <label>Width <input v-model.number="crop.width" aria-label="Crop width" type="number" min="1"
-                            :max="image.width - crop.x" required step="1" @blur="zeroIfEmpty($event, 'width')" /></label>
-                        <label>Height <input v-model.number="crop.height" aria-label="Crop height" type="number" min="1"
-                            :max="image.height - crop.y" required step="1" @blur="zeroIfEmpty($event, 'height')" /></label>
-                        <span class="crop-divider" role="separator" aria-orientation="vertical"></span>
-                        <label class="crop-angle-slider">Straighten
-                            <input v-model.number="angle" class="crop-angle-range" aria-label="Straighten angle slider" type="range"
-                                :min="-MAX_STRAIGHTEN_ANGLE" :max="MAX_STRAIGHTEN_ANGLE" step="0.1" />
-                        </label>
-                        <label><input v-model.number="angle" aria-label="Straighten angle in degrees" type="number"
-                            :min="-MAX_STRAIGHTEN_ANGLE" :max="MAX_STRAIGHTEN_ANGLE" step="0.1" required @blur="zeroIfEmpty($event, 'angle')" /> deg</label>
-                        <button type="button" class="icon-button" aria-label="Reset angle" title="Reset angle" :disabled="angle === 0" @click="angle = 0">
-                            <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                    <p v-if="!valid && !dragging" class="crop-error" role="alert"
-                        :title="`Enter a non-empty crop inside the image bounds and an angle within ±${MAX_STRAIGHTEN_ANGLE}°.`">
-                        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Invalid crop or angle
-                    </p>
-                    <div class="crop-actions">
-                        <span class="crop-divider" role="separator" aria-orientation="vertical"></span>
-                        <button type="submit" class="icon-button" aria-label="Apply crop" title="Apply crop" :disabled="!valid || unchanged">
-                            <i class="bi bi-check-lg" aria-hidden="true"></i>
-                        </button>
-                        <button type="button" class="icon-button" aria-label="Cancel crop" title="Cancel crop" @click="emit('cancel')">
-                            <i class="bi bi-x-lg" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                </fieldset>
-            </form>
-        </FloatingToolbar>
-    </Teleport>
+    <CropControls
+        :image="image"
+        :crop="crop"
+        :disabled="disabled"
+        :dragging="dragging"
+        :valid="valid"
+        :unchanged="unchanged"
+        v-model:angle="angle"
+        @update:crop="crop = $event"
+        @manual-change="onFormInput"
+        @apply="apply"
+        @cancel="emit('cancel')"
+    />
 </template>
 
 <style scoped>
@@ -344,172 +310,6 @@
     border-bottom-width: 1px;
 }
 
-.crop-controls {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: 8px;
-    width: max-content;
-    box-sizing: border-box;
-    padding: 0;
-    white-space: nowrap;
-}
-
-.crop-error {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: 0 0 0 auto;
-    font-size: 12px;
-    color: #ffa3a3;
-}
-
-.crop-error + .crop-actions {
-    margin-left: 0;
-}
-
-fieldset {
-    display: flex;
-    flex: 1;
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-    padding: 0;
-    border: 0;
-}
-
-.crop-fields {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.crop-divider {
-    height: 24px;
-    border-left: 1px solid var(--color-border);
-}
-
-.crop-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-label {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-}
-
-input,
-button {
-    height: 30px;
-    padding: 4px 8px;
-    color: var(--color-text);
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
-    border-radius: 3px;
-    font: inherit;
-}
-
-input[type='range'] {
-    appearance: none;
-    width: 140px;
-    padding: 0;
-    background: transparent;
-    border: 0;
-}
-
-.crop-angle-range::-webkit-slider-runnable-track {
-    height: 4px;
-    background: var(--color-border);
-    border-radius: 2px;
-}
-
-.crop-angle-range::-moz-range-track,
-.crop-angle-range::-moz-range-progress {
-    height: 4px;
-    background: var(--color-border);
-    border-radius: 2px;
-}
-
-.crop-angle-range::-webkit-slider-thumb {
-    appearance: none;
-    width: 14px;
-    height: 14px;
-    margin-top: -5px;
-    background: var(--color-text);
-    border: 0;
-    border-radius: 50%;
-}
-
-.crop-angle-range::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    background: var(--color-text);
-    border: 0;
-    border-radius: 50%;
-}
-
-input[type='number'] {
-    width: 78px;
-}
-
-button {
-    cursor: pointer;
-}
-
-.crop-controls button {
-    border-radius: var(--radius-button);
-}
-
-.crop-controls button[type='button'] {
-    background: var(--color-button-secondary);
-    border-color: var(--color-button-secondary-border);
-}
-
-.crop-controls button[type='button']:hover:not(:disabled) {
-    background: var(--color-button-secondary-hover);
-    border-color: var(--color-button-secondary-border-hover);
-}
-
-.icon-button {
-    width: 30px;
-    padding: 0;
-}
-
-button[type='submit'] {
-    background: var(--color-accent);
-    color: #fff;
-}
-
-@media (max-width: 1400px) {
-    .crop-angle-slider {
-        display: none;
-    }
-
-    input[type='number'] {
-        width: 60px;
-    }
-}
-
-button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.crop-controls button[type='button']:disabled {
-    opacity: var(--opacity-button-secondary-disabled);
-}
-
-input:focus-visible {
-    outline: 1px solid var(--color-focus);
-    outline-offset: 0;
-}
-
-button:focus-visible,
 .crop-surface:focus-visible {
     outline: 2px solid var(--color-focus);
     outline-offset: -2px;

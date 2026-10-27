@@ -80,6 +80,7 @@ export default defineConfig([
     },
     globalIgnores([
         '**/dist/**',
+        '**/dist-extension/**',
         '**/dist-ssr/**',
         '**/coverage/**',
         '**/.temp/**',
