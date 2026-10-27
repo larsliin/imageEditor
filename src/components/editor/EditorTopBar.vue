@@ -67,7 +67,6 @@
             <div class="document-detail document-detail--file">
                 <dt>
                     <i class="document-detail__icon bi bi-file-earmark-image" aria-hidden="true"></i>
-                    <span>File</span>
                 </dt>
                 <dd class="filename-controls" :class="{ 'filename-controls--editing': isEditing }">
                     <div class="filename-field">
