@@ -231,23 +231,8 @@
     left: 61px;
     z-index: 20;
     display: flex;
-    width: fit-content;
-    max-width: calc(100vw - 85px);
-    box-sizing: border-box;
-    margin-inline: auto;
-    padding: 6px 12px;
-    border: 1px solid var(--color-border);
-    border-radius: 6px;
-    background-color: var(--color-panel);
-    box-shadow: 0 4px 16px rgb(0 0 0 / 40%);
-}
-
-.floating-tool-controls > :deep(*) {
-    flex: 1;
-}
-
-.floating-tool-controls > :deep(.crop-controls) {
-    flex: 0 1 auto;
+    justify-content: center;
+    pointer-events: none;
 }
 
 .floating-tool-controls:empty {
