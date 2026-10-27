@@ -288,9 +288,8 @@
     display: none;
 }
 
-.viewport:focus-visible {
-    outline: 2px solid var(--color-focus);
-    outline-offset: -2px;
+.viewport:focus {
+    outline: none;
 }
 
 .viewport.is-pan-mode {

@@ -6,6 +6,7 @@ import { usePan } from '../../composables/usePan.ts';
 function setup(t: TestContext, reducedMotion = false) {
     const frames = new Map<number, globalThis.FrameRequestCallback>();
     const captures = new Set<number>();
+    const focusOptions: Array<{ preventScroll?: boolean } | undefined> = [];
     let frameId = 0;
     let now = 0;
     const browserWindow = Object.assign(new EventTarget(), {
@@ -19,6 +20,7 @@ function setup(t: TestContext, reducedMotion = false) {
         scrollHeight: 2000,
         clientWidth: 500,
         clientHeight: 500,
+        focus: (options?: { preventScroll?: boolean }) => { focusOptions.push(options); },
         setPointerCapture: (id: number) => { captures.add(id); },
         hasPointerCapture: (id: number) => captures.has(id),
         releasePointerCapture: (id: number) => { captures.delete(id); },
@@ -97,10 +99,24 @@ function setup(t: TestContext, reducedMotion = false) {
     }
 
     return {
-        viewport, pointer, key, step, frames, captures, pan, throwPreview,
+        viewport, pointer, key, step, frames, captures, pan, throwPreview, focusOptions,
         browserWindow, browserDocument, enabled, available, scope,
     };
 }
+
+test('Space plus pointer press focuses the viewport without scrolling', (t) => {
+    const { enabled, key, pointer, focusOptions, viewport, pan } = setup(t);
+    enabled.value = false;
+    pointer('pointerdown', 200, 200, 0);
+    assert.deepEqual(focusOptions, []);
+    key('keydown');
+    assert.deepEqual(focusOptions, []);
+    pointer('pointerdown', 200, 200, 10);
+    assert.deepEqual(focusOptions, [{ preventScroll: true }]);
+    assert.equal(pan.isDragging.value, true);
+    assert.equal(viewport.scrollLeft, 500);
+    assert.equal(viewport.scrollTop, 500);
+});
 
 for (const releaseSpaceFirst of [false, true]) {
     test(`Space panning retains momentum with Space released ${releaseSpaceFirst ? 'before' : 'after'} the mouse`, (t) => {

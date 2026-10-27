@@ -98,6 +98,7 @@ export function usePan(
         const element = container.value;
         if (!element || !isPanMode.value || event.button !== 0 || pointerId !== null) return;
         event.preventDefault();
+        if (isSpaceHeld.value) element.focus({ preventScroll: true });
         stopMomentum();
         pointerId = event.pointerId;
         lastX = event.clientX;

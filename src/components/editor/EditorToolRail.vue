@@ -1,11 +1,13 @@
 <script setup lang="ts">
-    import { EDIT_TOOLS, PAN_TOOL, type ToolId } from '@/types/editor';
+    import { computed, shallowRef, useTemplateRef, watch } from 'vue';
+    import { PAN_TOOL, EDIT_TOOLS, type ToolId } from '@/types/editor';
+    import { useOverflowCollapse } from '@/composables/useOverflowCollapse';
+    import EditorToolGroups from './EditorToolGroups.vue';
+    import EditorToolFoldout from './EditorToolFoldout.vue';
     import UndoIcon from '@/components/icons/UndoIcon.vue';
     import RedoIcon from '@/components/icons/RedoIcon.vue';
-    import CurvesIcon from '@/components/icons/CurvesIcon.vue';
-    import PanIcon from '@/components/icons/PanIcon.vue';
 
-    defineProps<{
+    const props = defineProps<{
         activeTool: ToolId | null
         hasImage: boolean
         busy: boolean
@@ -24,10 +26,26 @@
         undo: []
         redo: []
     }>();
+
+    const FOLDOUT_TOOL_IDS: readonly ToolId[] = [...EDIT_TOOLS.map((tool) => tool.id), PAN_TOOL.id];
+
+    const rail = useTemplateRef<HTMLElement>('rail');
+    const { collapsed } = useOverflowCollapse(rail);
+    const foldoutOpen = shallowRef(false);
+    const foldoutToolActive = computed(() => props.activeTool !== null && FOLDOUT_TOOL_IDS.includes(props.activeTool));
+
+    watch(collapsed, () => {
+        foldoutOpen.value = false;
+    });
+
+    function selectTool(tool: ToolId) {
+        foldoutOpen.value = false;
+        emit('select-tool', tool);
+    }
 </script>
 
 <template>
-    <nav class="tool-rail" aria-label="Editor tools">
+    <nav ref="rail" class="tool-rail" aria-label="Editor tools">
         <div class="tool-group" role="group" aria-label="File">
             <button
                 type="button"
@@ -78,63 +96,40 @@
 
         <hr class="separator" />
 
-        <div class="tool-group" role="group" aria-label="Edit tools">
-            <template v-for="tool in EDIT_TOOLS" :key="tool.id">
-                <button
-                    type="button"
-                    class="tool-button"
-                    :class="{ 'is-active': activeTool === tool.id }"
-                    :aria-pressed="activeTool === tool.id"
-                    :aria-label="tool.label"
-                    :title="tool.label"
-                    :disabled="!hasImage || busy"
-                    @click="emit('select-tool', tool.id)"
-                >
-                    <CurvesIcon v-if="tool.id === 'curves'" />
-                    <i v-else class="bi" :class="tool.icon" aria-hidden="true"></i>
-                </button>
-                <hr v-if="tool.id === 'rotate'" class="separator" />
-            </template>
-        </div>
-
-        <hr class="separator" />
-
-        <div class="tool-group" role="group" aria-label="View tools">
-            <button
-                type="button"
-                class="tool-button"
-                aria-label="Zoom in"
-                title="Zoom in (Ctrl++)"
-                :disabled="!canZoomIn"
-                @click="emit('zoom-in')"
-            >
-                <i class="bi bi-zoom-in" aria-hidden="true"></i>
-            </button>
-            <button
-                type="button"
-                class="tool-button"
-                aria-label="Zoom out"
-                title="Zoom out (Ctrl+-)"
-                :disabled="!canZoomOut"
-                @click="emit('zoom-out')"
-            >
-                <i class="bi bi-zoom-out" aria-hidden="true"></i>
-            </button>
-            <button
-                type="button"
-                class="tool-button"
-                :class="{ 'is-active': activeTool === PAN_TOOL.id }"
-                :aria-pressed="activeTool === PAN_TOOL.id"
-                :aria-label="PAN_TOOL.label"
-                :title="PAN_TOOL.label"
-                :disabled="!hasImage || busy"
-                @click="emit('select-tool', PAN_TOOL.id)"
-            >
-                <PanIcon />
-            </button>
-        </div>
+        <EditorToolFoldout
+            v-if="collapsed"
+            v-model:open="foldoutOpen"
+            label="More tools"
+            :active="foldoutToolActive"
+        >
+            <EditorToolGroups
+                layout="foldout"
+                :active-tool="activeTool"
+                :has-image="hasImage"
+                :busy="busy"
+                :can-zoom-in="canZoomIn"
+                :can-zoom-out="canZoomOut"
+                @select-tool="selectTool"
+                @zoom-in="emit('zoom-in')"
+                @zoom-out="emit('zoom-out')"
+            />
+        </EditorToolFoldout>
+        <EditorToolGroups
+            v-else
+            layout="rail"
+            :active-tool="activeTool"
+            :has-image="hasImage"
+            :busy="busy"
+            :can-zoom-in="canZoomIn"
+            :can-zoom-out="canZoomOut"
+            @select-tool="selectTool"
+            @zoom-in="emit('zoom-in')"
+            @zoom-out="emit('zoom-out')"
+        />
     </nav>
 </template>
+
+<style scoped src="./toolButtons.css"></style>
 
 <style scoped>
 .tool-rail {
@@ -142,54 +137,12 @@
     flex-direction: column;
     align-items: center;
     gap: 6px;
+    box-sizing: border-box;
     width: 48px;
+    min-height: 0;
     padding: 8px 0;
+    overflow: hidden;
     background-color: var(--color-panel);
     border-right: 1px solid var(--color-border);
-}
-
-.tool-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.separator {
-    align-self: center;
-    width: 28px;
-    border: none;
-    border-top: 1px solid var(--color-border);
-}
-
-.tool-button {
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    font-size: 18px;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.tool-button:hover:not(:disabled) {
-    background-color: var(--color-hover);
-}
-
-.tool-button.is-active {
-    background-color: var(--color-active);
-    border-color: var(--color-accent);
-}
-
-.tool-button:focus-visible {
-    outline: 2px solid var(--color-focus);
-    outline-offset: 1px;
-}
-
-.tool-button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
 }
 </style>
