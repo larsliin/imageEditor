@@ -54,6 +54,10 @@ unpacked Chrome extension to open the editor from the browser toolbar.
 - **Curves** adjusts the composite RGB curve or individual red, green, and blue
   channels. Add and move curve points on the graph, edit a selected point with
   the keyboard or numeric fields, and preview or cancel before applying.
+  On short desktop windows, the graph sits beside the controls to save vertical
+  space. Narrow windows keep a stacked layout with a height-aware graph.
+  The title and Cancel/Apply actions stay visible while the fields scroll when
+  space is especially limited.
 - **Color mode** converts an image to grayscale or to a black-and-white bitmap
   using a 50% threshold. Grayscale preserves transparency; bitmap conversion
   composites transparent pixels onto white and preserves the selected export format.
@@ -101,6 +105,9 @@ Color tool dialogs share `src/components/editor/ToolModal.vue`: provide a title,
 apply label, validity, busy/error state, and tool-specific fields through its
 default slot. It emits `apply` and `cancel` and handles modal focus, keyboard
 navigation, and shared actions. Mount it conditionally while the tool is open.
+Curves opts into `wideOnShortScreens` (a wider panel at viewport widths of at
+least 640px and heights up to 740px) and `scrollBody` (scrolling fields with
+the title and actions outside the scrolling region).
 All tool dialogs use the same panel styling and a transparent backdrop so the
 image preview is never dimmed while a dialog is open.
 The Export dialog stays fixed in the center. In the other dialogs, drag only the centered grip to reposition the dialog. The grip also supports arrow keys

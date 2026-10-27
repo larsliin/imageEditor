@@ -12,12 +12,16 @@
         compact?: boolean
         focusTitle?: boolean
         draggable?: boolean
+        wideOnShortScreens?: boolean
+        scrollBody?: boolean
     }>(), {
         applyLabel: 'Apply',
         error: null,
         compact: false,
         focusTitle: false,
         draggable: true,
+        wideOnShortScreens: false,
+        scrollBody: false,
     });
 
     const emit = defineEmits<{
@@ -104,7 +108,13 @@
         <dialog
             ref="dialog"
             class="tool-modal"
-            :class="{ 'tool-modal--compact': compact, 'tool-modal--static': !draggable, 'is-dragging': dragging }"
+            :class="{
+                'tool-modal--compact': compact,
+                'tool-modal--static': !draggable,
+                'tool-modal--wide-on-short-screens': wideOnShortScreens,
+                'tool-modal--scroll-body': scrollBody,
+                'is-dragging': dragging,
+            }"
             :style="{ transform }"
             :aria-labelledby="titleId"
             @cancel.prevent="cancel"
@@ -171,6 +181,30 @@
 .tool-modal__title {
     font-size: 18px;
     font-weight: 600;
+}
+
+.tool-modal--scroll-body {
+    overflow: hidden;
+}
+
+.tool-modal--scroll-body .tool-modal__form {
+    max-height: calc(100dvh - 34px);
+}
+
+.tool-modal--scroll-body .tool-modal__fields {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+.tool-modal--scroll-body .tool-modal__form > :not(.tool-modal__fields) {
+    flex-shrink: 0;
+}
+
+@media (min-width: 640px) and (max-height: 740px) {
+    .tool-modal--wide-on-short-screens {
+        width: 560px;
+    }
 }
 
 .tool-modal__header {

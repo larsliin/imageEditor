@@ -227,6 +227,8 @@
         :can-apply="valid && !unchanged"
         :busy="disabled"
         :error="error"
+        wide-on-short-screens
+        scroll-body
         @apply="apply"
         @cancel="cancel"
     >
@@ -316,7 +318,7 @@
 
 .graph {
     display: block;
-    width: min(100%, 340px);
+    width: min(100%, 340px, max(180px, calc(100dvh - 350px)));
     aspect-ratio: 1;
     margin: 0 auto;
     touch-action: none;
@@ -471,3 +473,5 @@
     cursor: not-allowed;
 }
 </style>
+
+<style scoped src="@/components/editor/curvesResponsive.css"></style>

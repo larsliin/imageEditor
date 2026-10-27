@@ -109,9 +109,17 @@
         });
     }
 
+    // Modal dialogs make the viewport inert, so Ctrl+wheel over them would zoom the page instead.
+    function handleModalWheel(event: WheelEvent) {
+        if (!event.ctrlKey || !props.bitmap) return;
+        if (!(event.target instanceof Element) || !event.target.closest('dialog[open]')) return;
+        handleWheel(event);
+    }
+
     let resizeObserver: ResizeObserver | null = null;
 
     onMounted(() => {
+        window.addEventListener('wheel', handleModalWheel, { passive: false });
         resizeObserver = new ResizeObserver(([entry]) => {
             if (!entry) return;
             // contentRect excludes the viewport padding, i.e. the area the image may occupy.
@@ -120,7 +128,10 @@
         if (viewportRef.value) resizeObserver.observe(viewportRef.value);
     });
 
-    onBeforeUnmount(() => resizeObserver?.disconnect());
+    onBeforeUnmount(() => {
+        resizeObserver?.disconnect();
+        window.removeEventListener('wheel', handleModalWheel);
+    });
 
     // Keep the point at the viewport center stable when zooming.
     let centerRatio: { x: number; y: number } | null = null;
