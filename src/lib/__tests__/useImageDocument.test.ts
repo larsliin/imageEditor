@@ -36,10 +36,13 @@ class TestBitmap {
 function setup(t: TestContext) {
     const bitmaps: TestBitmap[] = [];
     const files = [{ name: 'landscape.png', type: 'image/png', width: 80, height: 40 }];
+    const rotationAngles: number[] = [];
     const context = {
+        save() {},
+        restore() {},
         drawImage() {},
         translate() {},
-        rotate() {},
+        rotate(angle: number) { rotationAngles.push(angle); },
         getImageData: () => ({ data: new Uint8ClampedArray(4) }),
         putImageData() {},
     };
@@ -93,7 +96,7 @@ function setup(t: TestContext) {
         }
     });
     return {
-        editor, scope, bitmaps, files,
+        editor, scope, bitmaps, files, rotationAngles,
         fail: () => { failProcessing = true; },
     };
 }
@@ -120,6 +123,43 @@ test('only the last three edits can be undone and all three can be redone', asyn
         assert.equal(editor.bitmap.value?.width, width);
     }
     assert.equal(editor.canRedo.value, false);
+});
+
+for (const image of [{ width: 80, height: 40 }, { width: 40, height: 80 }]) {
+    for (const turns of [1, 2, 3] as const) {
+        test(`rotation applies ${turns} quarter-turns as one edit for ${image.width}x${image.height}`, async (t) => {
+            const { editor, files, rotationAngles } = setup(t);
+            Object.assign(files[0]!, image);
+            await editor.importImage();
+            const original = editor.bitmap.value;
+            assert.equal(await editor.rotateImage(turns), true);
+            assert.deepEqual(rotationAngles, [turns * Math.PI / 2]);
+            assert.deepEqual(
+                [editor.bitmap.value?.width, editor.bitmap.value?.height],
+                turns % 2 === 0 ? [image.width, image.height] : [image.height, image.width],
+            );
+            const rotated = editor.bitmap.value;
+            editor.undo();
+            assert.equal(editor.bitmap.value, original);
+            assert.equal(editor.canUndo.value, false);
+            editor.redo();
+            assert.equal(editor.bitmap.value, rotated);
+        });
+    }
+}
+
+test('zero rotation preserves the bitmap and redo history without processing', async (t) => {
+    const { editor, rotationAngles } = setup(t);
+    await editor.importImage();
+    const original = editor.bitmap.value;
+    await editor.rotateImage();
+    editor.undo();
+    rotationAngles.length = 0;
+    assert.equal(await editor.rotateImage(0), true);
+    assert.equal(editor.bitmap.value, original);
+    assert.equal(editor.canUndo.value, false);
+    assert.equal(editor.canRedo.value, true);
+    assert.deepEqual(rotationAngles, []);
 });
 
 test('a new edit clears redo and releases abandoned bitmaps, but not shared ones', async (t) => {

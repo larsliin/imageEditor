@@ -6,6 +6,7 @@ import { isIdentityLevels, isValidLevels, type LevelsParams } from '@/lib/levels
 import { isIdentityCurves, isValidCurves, type CurvesParams } from '@/lib/curves';
 import type { ColorMode } from '@/lib/colorMode';
 import type { Size } from '@/lib/zoom';
+import type { QuarterTurns } from '@/lib/rotate';
 import {
     canvasToBlob,
     decodeImageFile,
@@ -202,13 +203,14 @@ export function useImageDocument() {
         }
     }
 
-    async function rotateImage(): Promise<boolean> {
+    async function rotateImage(turns: QuarterTurns = 1): Promise<boolean> {
         const doc = current.value;
         if (!doc || isBusy.value) return false;
+        if (turns === 0) return true;
         status.value = 'processing';
         error.value = null;
         try {
-            const rotated = await rotateImageBitmap(doc.bitmap);
+            const rotated = await rotateImageBitmap(doc.bitmap, turns);
             if (disposed) {
                 rotated.close();
                 return false;

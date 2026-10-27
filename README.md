@@ -45,6 +45,10 @@ reliable image-preview, import, and export workflow.
   inside the toolbar without discarding the entered dimensions. Like the crop
   toolbar, drag its grip to reposition it, or focus the grip and use arrow keys
   (Shift for larger steps). Home or double-clicking the grip resets its position.
+- **Rotate** opens a draggable toolbar with clockwise and counterclockwise
+  90-degree preview buttons, followed by Apply and Cancel icons. Apply commits
+  the rotation as one undoable edit; Cancel, Escape, or switching tools discards
+  the preview. Four quarter-turns return to the unchanged image.
 - **Download the edited image** at its full pixel resolution. PNG, JPEG, and WebP
   files are exported in their original format; other formats are exported as
   PNG. Downloading creates a new file and does not overwrite the source.
@@ -64,7 +68,7 @@ reliable image-preview, import, and export workflow.
 
 Levels and Curves are shown in the toolbar but are not implemented yet.
 
-Crop and resize share the generic, slot-based
+Crop, resize, and rotate share the generic, slot-based
 `src/components/editor/FloatingToolbar.vue` container, mounted in the shared
 tool-controls area. Each tool owns its fields, validation, and actions; the
 container only handles positioning and pointer/keyboard movement.

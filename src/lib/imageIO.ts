@@ -1,6 +1,7 @@
 import { applyLevelsToPixels, type LevelsParams } from './levels';
 import { applyCurvesToPixels, type CurvesParams } from './curves';
 import { applyColorModeToPixels, encodeBmp, type ColorMode } from './colorMode';
+import { drawRotatedImage, rotatedSize, type QuarterTurns } from './rotate';
 
 export type ExportMimeType = 'image/png' | 'image/jpeg' | 'image/webp' | 'image/bmp';
 
@@ -61,17 +62,16 @@ export function renderToCanvas(source: ImageBitmap): HTMLCanvasElement {
     return canvas;
 }
 
-export async function rotateImageBitmap(source: ImageBitmap): Promise<ImageBitmap> {
+export async function rotateImageBitmap(source: ImageBitmap, turns: QuarterTurns = 1): Promise<ImageBitmap> {
     const canvas = document.createElement('canvas');
-    canvas.width = source.height;
-    canvas.height = source.width;
+    const size = rotatedSize(source, turns);
+    canvas.width = size.width;
+    canvas.height = size.height;
     const context = canvas.getContext('2d');
     if (!context) {
         throw new Error('Canvas 2D rendering is not available in this browser.');
     }
-    context.translate(canvas.width / 2, canvas.height / 2);
-    context.rotate(Math.PI / 2);
-    context.drawImage(source, -source.width / 2, -source.height / 2);
+    drawRotatedImage(context, source, turns);
     return createImageBitmap(canvas);
 }
 

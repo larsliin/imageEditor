@@ -18,7 +18,6 @@
     const emit = defineEmits<{
         import: []
         export: []
-        'rotate-image': []
         'select-tool': [tool: ToolId]
         'zoom-in': []
         'zoom-out': []
@@ -94,18 +93,7 @@
                     <CurvesIcon v-if="tool.id === 'curves'" />
                     <i v-else class="bi" :class="tool.icon" aria-hidden="true"></i>
                 </button>
-                <button
-                    v-if="tool.id === 'resize'"
-                    type="button"
-                    class="tool-button"
-                    aria-label="Rotate image"
-                    title="Rotate image 90° clockwise"
-                    :disabled="!hasImage || busy"
-                    @click="emit('rotate-image')"
-                >
-                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
-                </button>
-                <hr v-if="tool.id === 'resize'" class="separator" />
+                <hr v-if="tool.id === 'rotate'" class="separator" />
             </template>
         </div>
 

@@ -5,6 +5,8 @@
     import EditorCanvas from './components/editor/EditorCanvas.vue';
     import ZoomControls from './components/editor/ZoomControls.vue';
     import ResizeControls from './components/editor/ResizeControls.vue';
+    import RotateControls from './components/editor/RotateControls.vue';
+    import { rotatedSize, type QuarterTurns } from './lib/rotate';
     import { useImageDocument } from './composables/useImageDocument';
     import { useZoom } from './composables/useZoom';
     import type { Size } from './lib/zoom';
@@ -25,8 +27,9 @@
         = useImageDocument();
 
     const viewportSize = ref<Size>({ width: 0, height: 0 });
+    const rotationPreview = ref<QuarterTurns>(0);
     const imageSize = computed<Size | null>(() =>
-        bitmap.value ? { width: bitmap.value.width, height: bitmap.value.height } : null,
+        bitmap.value ? rotatedSize(bitmap.value, rotationPreview.value) : null,
     );
     const { zoom, isFit, canZoomIn, canZoomOut, zoomIn, zoomOut, fitToView, actualSize } = useZoom(
         imageSize,
@@ -75,6 +78,10 @@
         if (await resizeImage(size)) activeTool.value = null;
     }
 
+    async function applyRotation(turns: QuarterTurns) {
+        if (await rotateImage(turns)) activeTool.value = null;
+    }
+
     async function applyLevels(levels: LevelsParams) {
         if (await levelsImage(levels)) activeTool.value = null;
     }
@@ -92,6 +99,7 @@
     }
 
     watch(activeTool, () => {
+        rotationPreview.value = 0;
         levelsPreview.value = null;
         curvesPreview.value = null;
         colorModePreview.value = null;
@@ -126,7 +134,6 @@
             @select-tool="selectTool"
             @import="importImage"
             @export="exportImage"
-            @rotate-image="rotateImage"
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
             @undo="undo"
@@ -145,6 +152,7 @@
             :levels-preview="levelsPreview"
             :curves-preview="curvesPreview"
             :color-mode-preview="colorModePreview"
+            :rotation-preview="rotationPreview"
             @import="importImage"
             @dismiss-error="dismissError"
             @viewport-resize="viewportSize = $event"
@@ -164,6 +172,14 @@
             </template>
         </EditorCanvas>
         <div id="editor-tool-controls" class="floating-tool-controls"></div>
+        <RotateControls
+            v-if="activeTool === 'rotate' && bitmap"
+            :disabled="isBusy"
+            :error="error"
+            @preview="rotationPreview = $event"
+            @apply="applyRotation"
+            @cancel="activeTool = null"
+        />
         <ResizeControls
             v-if="activeTool === 'resize' && imageSize"
             :image="imageSize"

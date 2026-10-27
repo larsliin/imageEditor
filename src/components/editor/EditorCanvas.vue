@@ -7,6 +7,7 @@
     import { applyLevelsToPixels, type LevelsParams } from '@/lib/levels';
     import { applyCurvesToPixels, type CurvesParams } from '@/lib/curves';
     import { applyColorModeToPixels, type ColorMode } from '@/lib/colorMode';
+    import { drawRotatedImage, rotatedSize, type QuarterTurns } from '@/lib/rotate';
 
     const props = defineProps<{
         bitmap: ImageBitmap | null
@@ -19,6 +20,7 @@
         levelsPreview?: LevelsParams | null
         curvesPreview?: CurvesParams | null
         colorModePreview?: ColorMode | null
+        rotationPreview?: QuarterTurns
     }>();
 
     const emit = defineEmits<{
@@ -52,7 +54,7 @@
 
     const previewStyle = computed(() => {
         if (!props.bitmap) return undefined;
-        const size = displaySize(props.bitmap, props.zoom);
+        const size = displaySize(rotatedSize(props.bitmap, props.rotationPreview ?? 0), props.zoom);
         return { width: `${size.width}px`, height: `${size.height}px` };
     });
 
@@ -138,17 +140,18 @@
     );
 
     watch(
-        [() => props.bitmap, canvasRef, () => props.levelsPreview, () => props.curvesPreview, () => props.colorModePreview],
-        ([bitmap, canvas, levels, curves, colorMode]) => {
+        [() => props.bitmap, canvasRef, () => props.levelsPreview, () => props.curvesPreview, () => props.colorModePreview, () => props.rotationPreview],
+        ([bitmap, canvas, levels, curves, colorMode, rotation]) => {
             if (!bitmap || !canvas) return;
-            if (canvas.width !== bitmap.width || canvas.height !== bitmap.height) {
-                canvas.width = bitmap.width;
-                canvas.height = bitmap.height;
+            const size = rotatedSize(bitmap, rotation ?? 0);
+            if (canvas.width !== size.width || canvas.height !== size.height) {
+                canvas.width = size.width;
+                canvas.height = size.height;
             }
             const context = canvas.getContext('2d', { willReadFrequently: true });
             if (!context) return;
             context.clearRect(0, 0, canvas.width, canvas.height);
-            context.drawImage(bitmap, 0, 0);
+            drawRotatedImage(context, bitmap, rotation ?? 0);
             if (!levels && !curves && !colorMode) return;
             const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
             if (levels) applyLevelsToPixels(imageData.data, levels);
