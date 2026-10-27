@@ -192,6 +192,7 @@ test('shows a fallback filename and prevents renaming when there is no image', a
     assert.equal(filenameInput.value, 'No image');
     assert.equal(filenameInput.props.disabled, true);
     assert.equal(findElement(root, 'type', 'select'), null);
+    assert.equal(findElement(root, 'class', 'filename-edit-indicator bi bi-pencil'), null);
     await invokeHandler(filenameInput, 'onClick', new Event('click'));
     assert.equal(filenameInput.props.readonly, true);
     assert.deepEqual(emitted, []);
@@ -212,20 +213,26 @@ test('does not start renaming while the editor is busy', async (t) => {
 });
 
 test('starts renaming from the extensionless filename and focuses its input', async (t) => {
-    const { filenameInput } = mountTopBar(t, {
+    const { filenameInput, root } = mountTopBar(t, {
         fileName: 'family.photo.JPG',
         width: 400,
         height: 600,
         exportMimeType: 'image/png',
     });
 
-    assert.equal(filenameInput.value, 'family.photo.JPG');
+    assert.equal(filenameInput.value, 'family.photo');
+    const extension = findElement(root, 'class', 'filename-extension');
     await invokeHandler(filenameInput, 'onClick', new Event('click'));
 
     assert.equal(filenameInput.value, 'family.photo');
     assert.equal(filenameInput.props.readonly, false);
     assert.equal(filenameInput.focusCount, 1);
     assert.deepEqual(filenameInput.selectionRanges, [[0, 'family.photo'.length]]);
+    assert.equal(findElement(root, 'class', 'filename-extension')?.text, '.JPG');
+    assert.equal(findElement(root, 'class', 'filename-extension'), extension);
+    await enterFilename(filenameInput, 'a much longer new filename');
+    assert.equal(filenameInput.value, 'a much longer new filename');
+    assert.equal(findElement(root, 'class', 'filename-extension'), extension);
 });
 
 test('trims a renamed filename and removes a supported extension before emitting', async (t) => {
@@ -278,21 +285,21 @@ test('cancels renaming without validation or emitting and can restore input focu
 
     assert.equal(filenameInput.props.readonly, true);
     assert.equal(filenameInput.validityReportCount, 0);
-    assert.equal(filenameInput.value, 'original.png');
+    assert.equal(filenameInput.value, 'original');
     assert.equal(filenameInput.focusCount, 2);
     assert.deepEqual(emitted, []);
 });
 
-test('shows the full filename including extension without a format selector', (t) => {
+test('shows the full filename including extension when not editing', (t) => {
     const { filenameInput, root } = mountTopBar(t, {
         fileName: 'original.png',
         width: 400,
         height: 600,
         exportMimeType: 'image/png',
     });
-    assert.equal(filenameInput.value, 'original.png');
+    assert.equal(filenameInput.value, 'original');
     assert.equal(findElement(root, 'type', 'select'), null);
-    assert.equal(findElement(root, 'class', 'filename-extension-separator'), null);
+    assert.equal(findElement(root, 'class', 'filename-extension')?.text, '.png');
 });
 
 test('emits the theme toggle event when its button is activated', async (t) => {

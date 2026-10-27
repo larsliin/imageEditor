@@ -22,8 +22,13 @@
         const dot = fileName.value.lastIndexOf('.');
         return dot > 0 ? fileName.value.slice(0, dot) : fileName.value;
     });
+    const fileExtension = computed(() => {
+        if (!props.image) return '';
+        const dot = fileName.value.lastIndexOf('.');
+        return dot > 0 ? fileName.value.slice(dot) : '';
+    });
     const displayedName = computed({
-        get: () => isEditing.value ? draftName.value : fileName.value,
+        get: () => isEditing.value ? draftName.value : fileNameBase.value,
         set: (value: string) => { draftName.value = value; },
     });
     async function startRenaming() {
@@ -60,25 +65,35 @@
         </div>
         <dl class="document-details">
             <div class="document-detail document-detail--file">
-                <dt><i class="bi bi-file-earmark-image" aria-hidden="true"></i><span>File</span></dt>
-                <dd class="filename-controls">
-                    <input
-                        ref="filenameInput"
-                        v-model="displayedName"
-                        class="filename-input"
-                        type="text"
-                        aria-label="Filename"
-                        required
-                        :readonly="!isEditing"
-                        :tabindex="image ? 0 : -1"
-                        :title="fileName"
-                        :disabled="busy || !image"
-                        @input="filenameInput?.setCustomValidity('')"
-                        @blur="finishRenaming()"
-                        @click="!isEditing && startRenaming()"
-                        @keydown.enter.prevent="isEditing ? finishRenaming(false, true) : startRenaming()"
-                        @keydown.esc.prevent="finishRenaming(true, true)"
-                    />
+                <dt>
+                    <i class="document-detail__icon bi bi-file-earmark-image" aria-hidden="true"></i>
+                    <span>File</span>
+                </dt>
+                <dd class="filename-controls" :class="{ 'filename-controls--editing': isEditing }">
+                    <div class="filename-field">
+                        <div class="filename-base">
+                            <input
+                                ref="filenameInput"
+                                v-model="displayedName"
+                                class="filename-input"
+                                type="text"
+                                aria-label="Filename"
+                                required
+                                :readonly="!isEditing"
+                                :tabindex="image ? 0 : -1"
+                                :title="fileName"
+                                :disabled="busy || !image"
+                                :class="{ 'filename-input--empty': !image }"
+                                @input="filenameInput?.setCustomValidity('')"
+                                @blur="finishRenaming()"
+                                @click="!isEditing && startRenaming()"
+                                @keydown.enter.prevent="isEditing ? finishRenaming(false, true) : startRenaming()"
+                                @keydown.esc.prevent="finishRenaming(true, true)"
+                            />
+                        </div>
+                        <span v-if="fileExtension" class="filename-extension">{{ fileExtension }}</span>
+                    </div>
+                    <i v-if="image" class="filename-edit-indicator bi bi-pencil" aria-hidden="true"></i>
                 </dd>
             </div>
         </dl>
@@ -130,9 +145,9 @@
     display: flex;
     flex-shrink: 0;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     min-width: 0;
-    margin-left: 12px;
+    margin-left: 14px;
 }
 
 .theme-toggle {
@@ -172,59 +187,117 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    height: 28px;
     color: var(--color-text-muted);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 18px;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
-.document-detail dt span::after {
-    content: ':';
+.document-detail__icon {
+    display: grid;
+    flex: 0 0 24px;
+    align-self: center;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--color-border);
+    border-radius: 5px;
+    background-color: var(--color-panel-raised);
+    font-size: 12px;
 }
 
 .document-detail dd {
     margin: 0;
     font-variant-numeric: tabular-nums;
-    font-size: 0.875rem;
 }
 
 .filename-controls {
     display: flex;
     align-items: center;
-    gap: 0;
-    flex: 0 0 auto;
+    gap: 5px;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.filename-field {
+    display: flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 3px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 18px;
+    color: var(--color-text);
+    transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.filename-field:has(.filename-input:not(:disabled)):hover,
+.filename-controls--editing .filename-field {
+    border-color: var(--color-border);
+    background-color: var(--color-panel-raised);
+}
+
+.filename-field:has(.filename-input:focus-visible) {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
+}
+
+.filename-base {
+    display: flex;
+    min-width: 0;
 }
 
 .filename-input {
-    width: auto;
     field-sizing: content;
+    width: auto;
     min-width: 1.5rem;
     max-width: min(18rem, 40vw);
-    height: 22px;
-    padding: 4px 0 4px 1px;
-    border: 1px solid var(--color-border);
-    border-radius: 3px;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    outline: none;
     font: inherit;
-    font-size: 12px;
-    color: var(--color-text-muted);
-    background-color: var(--color-bg);
+    color: inherit;
+    background-color: transparent;
 }
 
 .filename-input:read-only {
-    border-color: transparent;
-    background-color: transparent;
     text-overflow: ellipsis;
     cursor: pointer;
 }
 
-.filename-input:read-only:hover:not(:disabled) {
-    color: var(--color-text);
-}
-
 .filename-input:disabled {
     cursor: default;
+    color: var(--color-text-muted);
 }
 
-.filename-input:focus-visible {
-    outline: 1px solid var(--color-focus);
-    outline-offset: 0;
+.filename-input--empty {
+    transform: translateY(1px);
+}
+
+.filename-edit-indicator {
+    flex: 0 0 auto;
+    color: var(--color-text-muted);
+    font-size: 10px;
+    opacity: 0.55;
+    transition: color 120ms ease, opacity 120ms ease;
+}
+
+.filename-controls:hover .filename-edit-indicator,
+.filename-controls:focus-within .filename-edit-indicator {
+    color: var(--color-text);
+    opacity: 1;
+}
+
+.filename-extension {
+    flex: 0 0 auto;
+    color: var(--color-text-muted);
 }
 
 @media (max-width: 640px) {
