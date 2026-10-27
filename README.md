@@ -169,6 +169,12 @@ Run the bounded undo/redo history and bitmap-lifecycle regression tests:
 node --test src/lib/__tests__/useImageDocument.test.ts
 ```
 
+Run the editor top-bar rename and export-format tests:
+
+```sh
+node --test src/components/editor/__tests__/EditorTopBar.test.ts
+```
+
 ## Tech stack
 
 Vue 3, TypeScript, and Vite. Image rendering and export use browser APIs,
