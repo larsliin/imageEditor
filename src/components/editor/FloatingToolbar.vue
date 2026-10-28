@@ -1,34 +1,52 @@
 <script setup lang="ts">
-    import { computed, onMounted, shallowRef, useTemplateRef } from 'vue';
+    import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue';
     import { useDragOffset } from '@/composables/useDragOffset';
     import type { Point } from '@/lib/crop';
+    import { clampGripOffset } from '@/lib/drag';
 
     defineProps<{
         label: string
     }>();
 
     const NUDGE = 10;
-    const { offset, dragging, transform, onPointerDown, onPointerMove, onPointerEnd, nudge, reset } = useDragOffset({ onEnd: commitOffset });
+    const { offset, dragging, transform, onPointerDown, onPointerMove, onPointerEnd, nudge, reset } = useDragOffset({
+        onEnd: commitOffset,
+        clamp: clampOffset,
+    });
     const root = useTemplateRef<HTMLDivElement>('root');
-    // Toolbar center as a fraction of the viewport, so it keeps its relative place when the window resizes.
+    const grip = useTemplateRef<HTMLButtonElement>('grip');
+    // Keep the opening pixel position independent of viewport resizing.
     const anchor = shallowRef<Point | null>(null);
     let initialAnchor: Point | null = null;
+
+    function clampOffset(next: Point): Point {
+        const rect = grip.value?.getBoundingClientRect();
+        if (!rect) return next;
+        return clampGripOffset(next, offset.value, rect, { width: window.innerWidth, height: window.innerHeight });
+    }
 
     onMounted(() => {
         const rect = root.value?.getBoundingClientRect();
         if (!rect) return;
         initialAnchor = {
-            x: (rect.left + rect.width / 2) / window.innerWidth,
-            y: (rect.top + rect.height / 2) / window.innerHeight,
+            x: rect.left,
+            y: rect.top,
         };
         anchor.value = initialAnchor;
+        window.addEventListener('resize', keepGripInViewport);
     });
+
+    onBeforeUnmount(() => window.removeEventListener('resize', keepGripInViewport));
+
+    function keepGripInViewport() {
+        nudge(0, 0);
+    }
 
     function commitOffset() {
         if (!anchor.value) return;
         anchor.value = {
-            x: anchor.value.x + offset.value.x / window.innerWidth,
-            y: anchor.value.y + offset.value.y / window.innerHeight,
+            x: anchor.value.x + offset.value.x,
+            y: anchor.value.y + offset.value.y,
         };
         reset();
     }
@@ -36,9 +54,9 @@
     const style = computed(() => anchor.value
         ? {
             position: 'fixed' as const,
-            left: `${anchor.value.x * 100}%`,
-            top: `${anchor.value.y * 100}%`,
-            transform: `translate(-50%, -50%) ${transform.value}`,
+            left: `${anchor.value.x}px`,
+            top: `${anchor.value.y}px`,
+            transform: transform.value,
         }
         : { transform: transform.value });
 
@@ -78,6 +96,7 @@
         :style="style"
     >
         <button
+            ref="grip"
             type="button"
             class="floating-toolbar__grip"
             :aria-label="`Move ${label}. Use arrow keys to move; Home resets the position.`"

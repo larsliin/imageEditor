@@ -6,19 +6,27 @@ import { createRenderer, nextTick, type Component } from 'vue';
 import { compileScript, parse } from 'vue/compiler-sfc';
 import { transpileModule, ModuleKind } from 'typescript';
 
-const source = await readFile(new URL('../../components/editor/ToolModal.vue', import.meta.url), 'utf8');
-const { descriptor } = parse(source);
-const script = compileScript(descriptor, { id: 'tool-modal-drag-test', inlineTemplate: true }).content;
-const compiled = transpileModule(script, { compilerOptions: { module: ModuleKind.ESNext } }).outputText
-    .replaceAll(/(['"])vue\1/g, JSON.stringify(import.meta.resolve('vue')))
-    .replaceAll("'@/composables/useDragOffset'", JSON.stringify(new URL('../../composables/useDragOffset.ts', import.meta.url).href));
-const { default: modal }: { default: Component } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
+async function loadComponent(name: string): Promise<Component> {
+    const source = await readFile(new URL(`../../components/editor/${name}.vue`, import.meta.url), 'utf8');
+    const { descriptor } = parse(source);
+    const script = compileScript(descriptor, { id: `${name}-drag-test`, inlineTemplate: true }).content;
+    const compiled = transpileModule(script, { compilerOptions: { module: ModuleKind.ESNext } }).outputText
+        .replaceAll(/(['"])vue\1/g, JSON.stringify(import.meta.resolve('vue')))
+        .replaceAll("'@/lib/drag'", JSON.stringify(new URL('../drag.ts', import.meta.url).href))
+        .replaceAll("'@/composables/useDragOffset'", JSON.stringify(new URL('../../composables/useDragOffset.ts', import.meta.url).href));
+    const { default: component }: { default: Component } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
+    return component;
+}
+
+const modal = await loadComponent('ToolModal');
+const toolbar = await loadComponent('FloatingToolbar');
 
 class HostElement extends EventTarget {
     tag: string;
     props: Record<string, unknown> = {};
     captures = new Set<number>();
     captureError = false;
+    panel: HostElement | null = null;
 
     constructor(tag: string) {
         super();
@@ -44,11 +52,22 @@ class HostElement extends EventTarget {
     }
 
     getBoundingClientRect() {
-        const style = this.props.style as { transform?: string } | undefined;
+        if (this.panel) {
+            const rect = this.panel.getBoundingClientRect();
+            return this.props.class === 'tool-modal__grip'
+                ? { left: rect.left + rect.width / 2 - 20, top: rect.top + 5, width: 40, height: 12 }
+                : { left: rect.left + 7, top: rect.top + 7, width: 12, height: rect.height - 14 };
+        }
+        const style = this.props.style as { transform?: string, left?: string, top?: string } | undefined;
         const translation = /translate\(([-.\d]+)px, ([-.\d]+)px\)/.exec(style?.transform ?? '');
+        const coordinate = (value: string | undefined, viewport: number, fallback: number) =>
+            value ? Number.parseFloat(value) * (value.endsWith('%') ? viewport / 100 : 1) : fallback;
+        const centered = style?.transform?.includes('translate(-50%, -50%)');
         return {
-            left: 200 + Number(translation?.[1] ?? 0),
-            top: 150 + Number(translation?.[2] ?? 0),
+            left: coordinate(style?.left, window.innerWidth, 200 + (window.innerWidth - 1000) / 2)
+                - (centered ? 210 : 0) + Number(translation?.[1] ?? 0),
+            top: coordinate(style?.top, window.innerHeight, 150 + (window.innerHeight - 800) / 2)
+                - (centered ? 150 : 0) + Number(translation?.[2] ?? 0),
             width: 420,
             height: 300,
         };
@@ -68,7 +87,7 @@ class HostElement extends EventTarget {
     }
 }
 
-function setup(t: TestContext) {
+function setup(t: TestContext, component = modal) {
     const elements: HostElement[] = [];
     const body = new HostElement('body');
     const browserWindow = Object.assign(new EventTarget(), { innerWidth: 1000, innerHeight: 800 });
@@ -100,17 +119,121 @@ function setup(t: TestContext) {
         nextSibling: () => null,
         querySelector: () => body,
     });
-    const app = renderer.createApp(modal, { title: 'Levels', canApply: true, busy: false });
+    const app = renderer.createApp(component, component === modal
+        ? { title: 'Levels', canApply: true, busy: false }
+        : { label: 'Crop toolbar' });
     app.mount(new HostElement('root'));
     t.after(() => {
         app.unmount();
         for (const restore of restoreGlobals) restore();
     });
-    const dialog = elements.find(element => element.tag === 'dialog')!;
-    const grip = elements.find(element => element.props.class === 'tool-modal__grip')!;
+    const dialog = elements.find(element => component === modal
+        ? element.tag === 'dialog'
+        : String(element.props.class).includes('floating-toolbar'))!;
+    const grip = elements.find(element => element.props.class === (component === modal ? 'tool-modal__grip' : 'floating-toolbar__grip'))!;
+    grip.panel = dialog;
     const isDragging = () => String(dialog.props.class).includes('is-dragging');
     return { app, dialog, grip, isDragging, browserWindow, browserDocument };
 }
+
+for (const [name, component] of [['popup', modal], ['floating toolbar', toolbar]] as const) {
+    test(`${name} stays stationary on resize until an edge meets the grip`, async (t) => {
+        const { dialog, grip, browserWindow } = setup(t, component);
+        await nextTick();
+        const initial = dialog.getBoundingClientRect();
+        for (const [width, height] of [[700, 500], [1400, 1000]]) {
+            browserWindow.innerWidth = width!;
+            browserWindow.innerHeight = height!;
+            browserWindow.dispatchEvent(new Event('resize'));
+            await nextTick();
+            assert.deepEqual(dialog.getBoundingClientRect(), initial, 'resizing must not reposition the tool');
+        }
+        grip.send('pointerdown');
+        grip.send('pointermove', { clientX: 460, clientY: 207 });
+        await nextTick();
+        grip.send('pointerup');
+        await nextTick();
+        const moved = dialog.getBoundingClientRect();
+        assert.equal(moved.left, initial.left + 50);
+        assert.equal(moved.top, initial.top + 40);
+        browserWindow.innerWidth = 500;
+        browserWindow.innerHeight = 600;
+        browserWindow.dispatchEvent(new Event('resize'));
+        await nextTick();
+        assert.deepEqual(dialog.getBoundingClientRect(), moved, 'resizing must preserve the dragged position');
+        for (const [width, height] of [[300, 320], [240, 300]]) {
+            const before = grip.getBoundingClientRect();
+            browserWindow.innerWidth = width!;
+            browserWindow.innerHeight = height!;
+            browserWindow.dispatchEvent(new Event('resize'));
+            await nextTick();
+            const handle = grip.getBoundingClientRect();
+            assert.equal(handle.left, Math.max(0, Math.min(before.left, width! - before.width)));
+            assert.equal(handle.top, Math.max(0, Math.min(before.top, height! - before.height)));
+        }
+        const clamped = dialog.getBoundingClientRect();
+        browserWindow.innerWidth = 1400;
+        browserWindow.innerHeight = 1000;
+        browserWindow.dispatchEvent(new Event('resize'));
+        await nextTick();
+        assert.deepEqual(dialog.getBoundingClientRect(), clamped, 'expanding the window must not move the tool back');
+        grip.send('keydown', { key: 'Home' });
+        await nextTick();
+        assert.deepEqual(dialog.getBoundingClientRect(), initial, 'Home restores the opening pixel position');
+    });
+}
+
+for (const [name, component] of [['popup', modal], ['floating toolbar', toolbar]] as const) {
+    test(`${name} allows panel overflow but keeps its entire grip inside during captured dragging`, async (t) => {
+        const { dialog, grip, isDragging, browserWindow } = setup(t, component);
+        await nextTick();
+        grip.send('pointerdown');
+        for (const [clientX, clientY, edge] of [
+            [-1000, 167, 'left'],
+            [2000, 167, 'right'],
+            [410, -1000, 'top'],
+            [410, 2000, 'bottom'],
+        ]) {
+            grip.send('pointermove', { clientX, clientY });
+            await nextTick();
+            const rect = dialog.getBoundingClientRect();
+            const handle = grip.getBoundingClientRect();
+            assert.ok(handle.left >= 0 && handle.top >= 0);
+            assert.ok(handle.left + handle.width <= browserWindow.innerWidth);
+            assert.ok(handle.top + handle.height <= browserWindow.innerHeight);
+            if (edge === 'left') assert.ok(rect.left < 0, 'panel may overflow left');
+            if (edge === 'right') assert.ok(rect.left + rect.width > browserWindow.innerWidth, 'panel may overflow right');
+            if (edge === 'top') assert.ok(rect.top < 0, 'panel may overflow above the viewport');
+            if (edge === 'bottom') assert.ok(rect.top + rect.height > browserWindow.innerHeight, 'panel may overflow below the viewport');
+            assert.equal(isDragging(), true);
+            assert.equal(grip.hasPointerCapture(1), true);
+            grip.send('pointermove', { clientX: 430, clientY: 187 });
+            await nextTick();
+            assert.equal(dialog.getBoundingClientRect().left, 220);
+            assert.equal(dialog.getBoundingClientRect().top, 170);
+        }
+        grip.send('pointerup');
+        await nextTick();
+        assert.equal(isDragging(), false);
+        assert.equal(dialog.getBoundingClientRect().top, 170, 'committing a drag preserves its position');
+        grip.send('keydown', { key: 'ArrowRight', shiftKey: true });
+        await nextTick();
+        assert.equal(dialog.getBoundingClientRect().left, 270);
+    });
+}
+
+test('keyboard movement keeps floating toolbar reachable even when wider than the viewport', async (t) => {
+    const { dialog, grip, browserWindow } = setup(t, toolbar);
+    await nextTick();
+    browserWindow.innerWidth = 300;
+    browserWindow.innerHeight = 400;
+    grip.send('keydown', { key: 'ArrowRight', shiftKey: true });
+    await nextTick();
+    const handle = grip.getBoundingClientRect();
+    assert.ok(handle.left >= 0 && handle.left + handle.width <= 300);
+    assert.ok(handle.top >= 0 && handle.top + handle.height <= 400);
+    assert.ok(dialog.getBoundingClientRect().left + dialog.getBoundingClientRect().width > 300);
+});
 
 test('a captured popup drag continues outside the window and resumes inside with the button held', async (t) => {
     const { dialog, grip, isDragging } = setup(t);

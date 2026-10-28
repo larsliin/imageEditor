@@ -53,6 +53,14 @@ unpacked Chrome extension to open the editor from the browser toolbar.
   inside the toolbar without discarding the entered dimensions. Like the crop
   toolbar, drag its grip to reposition it, or focus the grip and use arrow keys
   (Shift for larger steps). Home or double-clicking the grip resets its position.
+  Floating toolbar and popup panels may overflow the viewport during pointer
+  and keyboard moves, but their entire drag grip stays inside the window.
+  A held drag continues outside the window and resumes on return, using the
+  same capture, release, and focus-loss handling as the color-tool dialogs.
+  Floating toolbars and popups keep fixed pixel positions when the browser window
+  is resized until an edge meets their grip. Further shrinking moves the panel
+  only enough to keep the entire grip inside; expanding leaves it in place.
+  Reset restores their opening position.
 - **Pixel rulers** toggle on and off with the **px** button in the header.
   The top and left rulers measure the current image in pixels from its top-left
   corner, tracking zoom, pan, resizing, cropping, and rotation previews.
@@ -214,6 +222,12 @@ Run the crop-overlay straighten regression tests:
 
 ```sh
 node --test src/lib/__tests__/cropOverlay.test.ts
+```
+
+Run the popup drag and fixed-position resize regression tests:
+
+```sh
+node --test src/lib/__tests__/toolModalDrag.test.ts
 ```
 
 Run the bounded undo/redo history and bitmap-lifecycle regression tests:

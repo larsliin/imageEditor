@@ -1,7 +1,8 @@
 <script setup lang="ts">
-    import { nextTick, onBeforeUnmount, onMounted, useId, useTemplateRef } from 'vue';
+    import { nextTick, onBeforeUnmount, onMounted, shallowRef, useId, useTemplateRef } from 'vue';
     import { useDragOffset } from '@/composables/useDragOffset';
     import type { Point } from '@/lib/crop';
+    import { clampGripOffset } from '@/lib/drag';
 
     const props = withDefaults(defineProps<{
         title: string
@@ -31,24 +32,18 @@
 
     const titleId = useId();
     const dialog = useTemplateRef<HTMLDialogElement>('dialog');
+    const grip = useTemplateRef<HTMLButtonElement>('grip');
+    const position = shallowRef<Point | null>(null);
     const { offset, dragging, transform, onPointerDown, onPointerMove, onPointerEnd, nudge, reset } = useDragOffset({ clamp: clampOffset });
-    // Minimum distance the grip keeps from the viewport edges so it stays reachable.
-    const GRIP_MARGIN = 24;
     let previousFocus: HTMLElement | null = null;
 
     function clampOffset(next: Point): Point {
-        const rect = dialog.value?.getBoundingClientRect();
+        const rect = grip.value?.getBoundingClientRect();
         if (!rect) return next;
-        const baseTop = rect.top - offset.value.y;
-        const gripCenter = rect.left - offset.value.x + rect.width / 2;
-        const limit = (value: number, min: number, max: number) => Math.max(min, Math.min(value, Math.max(min, max)));
-        return {
-            x: limit(next.x, GRIP_MARGIN - gripCenter, window.innerWidth - GRIP_MARGIN - gripCenter),
-            y: limit(next.y, -baseTop, window.innerHeight - GRIP_MARGIN * 2 - baseTop),
-        };
+        return clampGripOffset(next, offset.value, rect, { width: window.innerWidth, height: window.innerHeight });
     }
 
-    function keepInViewport() {
+    function keepGripInViewport() {
         nudge(0, 0);
     }
 
@@ -74,11 +69,13 @@
     onMounted(() => {
         previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         dialog.value?.showModal();
-        if (props.draggable) window.addEventListener('resize', keepInViewport);
+        const rect = dialog.value?.getBoundingClientRect();
+        if (rect) position.value = { x: rect.left, y: rect.top };
+        if (props.draggable) window.addEventListener('resize', keepGripInViewport);
     });
 
     onBeforeUnmount(() => {
-        window.removeEventListener('resize', keepInViewport);
+        window.removeEventListener('resize', keepGripInViewport);
         dialog.value?.close();
         void nextTick(() => {
             if (previousFocus?.isConnected) previousFocus.focus();
@@ -106,7 +103,10 @@
                 'tool-modal--scroll-body': scrollBody,
                 'is-dragging': dragging,
             }"
-            :style="{ transform }"
+            :style="{
+                transform,
+                ...(position ? { position: 'fixed', left: `${position.x}px`, top: `${position.y}px`, right: 'auto', bottom: 'auto', margin: 0 } : {}),
+            }"
             :aria-labelledby="titleId"
             @cancel.prevent="cancel"
             @keydown.esc.stop.prevent="cancel"
@@ -114,7 +114,7 @@
             <form class="tool-modal__form" :aria-busy="busy" @submit.prevent="apply">
                 <header class="tool-modal__header">
                     <h2 :id="titleId" class="tool-modal__title" :tabindex="focusTitle ? -1 : undefined" :autofocus="focusTitle">{{ title }}</h2>
-                    <button v-if="draggable" type="button" class="tool-modal__grip"
+                    <button v-if="draggable" ref="grip" type="button" class="tool-modal__grip"
                         :aria-label="`Move ${title} dialog. Use arrow keys to move; Home resets the position.`"
                         title="Drag to move; double-click to reset"
                         @pointerdown="onPointerDown"
@@ -149,11 +149,16 @@
     margin: auto;
     padding: 0;
     overflow: auto;
+    scrollbar-width: none;
     color: var(--color-text);
     background: var(--color-panel);
     border: 1px solid var(--color-border);
     border-radius: 8px;
     box-shadow: 0 16px 48px rgb(0 0 0 / 50%);
+}
+
+.tool-modal::-webkit-scrollbar {
+    display: none;
 }
 
 .tool-modal::backdrop {
