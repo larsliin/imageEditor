@@ -1,4 +1,4 @@
-# Image Editor
+# ImageTrim
 
 A browser-based image editor for cropping, resizing, rotating, and adjusting
 images locally in your browser. Use it as a web app or load the optional
@@ -156,7 +156,7 @@ npm run build:extension
 2. Open `chrome://extensions` and enable **Developer mode**.
 3. Click **Load unpacked** and select the generated `dist-extension` folder (not the
    project root or `public` folder).
-4. Pin **Image Editor** and click its toolbar button to open the editor in a
+4. Pin **ImageTrim** and click its toolbar button to open the editor in a
    full browser tab. Each click opens a new editor tab. Import an image with the
    editor's file picker; the extension does not interact with images on websites.
 
