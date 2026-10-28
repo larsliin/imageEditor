@@ -126,7 +126,7 @@
     border: 1px solid var(--color-border);
     border-radius: 6px;
     background-color: var(--color-panel);
-    box-shadow: 0 4px 16px rgb(0 0 0 / 40%);
+    box-shadow: var(--shadow-floating-panel);
     white-space: nowrap;
     pointer-events: auto;
 }

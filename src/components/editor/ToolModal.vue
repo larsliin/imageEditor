@@ -68,14 +68,16 @@
 
     onMounted(() => {
         previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-        dialog.value?.showModal();
+        dialog.value?.show();
         const rect = dialog.value?.getBoundingClientRect();
         if (rect) position.value = { x: rect.left, y: rect.top };
         if (props.draggable) window.addEventListener('resize', keepGripInViewport);
+        document.addEventListener('keydown', cancelOnEscape);
     });
 
     onBeforeUnmount(() => {
         window.removeEventListener('resize', keepGripInViewport);
+        document.removeEventListener('keydown', cancelOnEscape);
         dialog.value?.close();
         void nextTick(() => {
             if (previousFocus?.isConnected) previousFocus.focus();
@@ -88,6 +90,12 @@
 
     function cancel() {
         if (!props.busy) emit('cancel');
+    }
+
+    function cancelOnEscape(event: KeyboardEvent) {
+        if (event.key !== 'Escape' || event.defaultPrevented) return;
+        event.preventDefault();
+        cancel();
     }
 </script>
 
@@ -144,6 +152,9 @@
 
 <style scoped>
 .tool-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
     width: min(420px, calc(100vw - 32px));
     max-height: calc(100dvh - 32px);
     margin: auto;
@@ -154,15 +165,11 @@
     background: var(--color-panel);
     border: 1px solid var(--color-border);
     border-radius: 8px;
-    box-shadow: 0 16px 48px rgb(0 0 0 / 50%);
+    box-shadow: var(--shadow-floating-panel);
 }
 
 .tool-modal::-webkit-scrollbar {
     display: none;
-}
-
-.tool-modal::backdrop {
-    background: transparent;
 }
 
 .tool-modal__form {
@@ -193,12 +200,6 @@
 
 .tool-modal--scroll-body .tool-modal__form > :not(.tool-modal__fields) {
     flex-shrink: 0;
-}
-
-@media (min-width: 640px) and (max-height: 740px) {
-    .tool-modal--wide-on-short-screens {
-        width: 560px;
-    }
 }
 
 .tool-modal__header {
@@ -326,5 +327,11 @@
 .tool-modal__button:focus-visible {
     outline: 2px solid var(--color-focus);
     outline-offset: 2px;
+}
+
+@media (min-width: 640px) and (max-height: 740px) {
+    .tool-modal--wide-on-short-screens {
+        width: 460px;
+    }
 }
 </style>

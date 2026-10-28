@@ -8,6 +8,7 @@
         isFit: boolean
         imageSize: Size | null
         rulersEnabled?: boolean
+        disabled?: boolean
     }>();
 
     const emit = defineEmits<{
@@ -31,7 +32,7 @@
             aria-label="Fit to window"
             title="Fit to window"
             :aria-pressed="isFit"
-            :disabled="isFit"
+            :disabled="disabled || isFit"
             @click="emit('fit')"
         >
             <i class="bi bi-arrows-angle-contract" aria-hidden="true"></i>
@@ -42,7 +43,7 @@
             aria-label="Actual size (100%)"
             title="Actual size (100%)"
             :aria-pressed="isActualSize"
-            :disabled="isActualSize"
+            :disabled="disabled || isActualSize"
             @click="emit('actual-size')"
         >
             <i class="bi bi-1-square" aria-hidden="true"></i>

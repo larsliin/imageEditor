@@ -41,6 +41,10 @@
 
     const activeTool = ref<ToolId | null>(null);
     const exportOpen = ref(false);
+    const popupOpen = computed(() => exportOpen.value
+        || activeTool.value === 'levels'
+        || activeTool.value === 'curves'
+        || activeTool.value === 'color-mode');
     const rulersEnabled = shallowRef(false);
     const rulersStorageKey = 'image-editor-rulers';
 
@@ -166,10 +170,10 @@
             if (canZoomOut.value) zoomOut();
         } else if (key === 'z' && !event.shiftKey) {
             event.preventDefault();
-            if (canUndo.value) undo();
+            if (!popupOpen.value && canUndo.value) undo();
         } else if (key === 'y' || (key === 'z' && event.shiftKey)) {
             event.preventDefault();
-            if (canRedo.value) redo();
+            if (!popupOpen.value && canRedo.value) redo();
         }
     }
 
@@ -195,6 +199,7 @@
             :active-tool="activeTool"
             :has-image="bitmap !== null"
             :busy="isBusy"
+            :popup-open="popupOpen"
             :can-zoom-in="canZoomIn"
             :can-zoom-out="canZoomOut"
             :can-undo="canUndo"
@@ -210,6 +215,7 @@
         <EditorCanvas
             :key="documentId"
             class="editor__canvas"
+            :inert="popupOpen"
             :bitmap="bitmap"
             :zoom="zoom"
             :rulers-enabled="rulersEnabled"
@@ -232,6 +238,7 @@
         >
             <template #overlay>
                 <ZoomControls
+                    :disabled="popupOpen"
                     :zoom="zoom"
                     :is-fit="isFit"
                     :image-size="imageSize"

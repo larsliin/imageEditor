@@ -11,6 +11,7 @@
         activeTool: ToolId | null
         hasImage: boolean
         busy: boolean
+        popupOpen: boolean
         canZoomIn: boolean
         canZoomOut: boolean
         canUndo: boolean
@@ -46,64 +47,78 @@
 
 <template>
     <nav ref="rail" class="tool-rail" aria-label="Editor tools">
-        <div class="tool-group" role="group" aria-label="File">
-            <button
-                type="button"
-                class="tool-button"
-                aria-label="Import image"
-                title="Import image"
-                :disabled="busy"
-                @click="emit('import')"
-            >
-                <i class="bi bi-folder2-open" aria-hidden="true"></i>
-            </button>
-            <button
-                type="button"
-                class="tool-button"
-                aria-label="Export"
-                title="Export"
-                :disabled="!hasImage || busy"
-                @click="emit('export')"
-            >
-                <i class="bi bi-download" aria-hidden="true"></i>
-            </button>
-        </div>
+        <fieldset class="tool-rail__controls" :disabled="popupOpen" aria-label="Editor tools">
+            <div class="tool-group" role="group" aria-label="File">
+                <button
+                    type="button"
+                    class="tool-button"
+                    aria-label="Import image"
+                    title="Import image"
+                    :disabled="busy"
+                    @click="emit('import')"
+                >
+                    <i class="bi bi-folder2-open" aria-hidden="true"></i>
+                </button>
+                <button
+                    type="button"
+                    class="tool-button"
+                    aria-label="Export"
+                    title="Export"
+                    :disabled="!hasImage || busy"
+                    @click="emit('export')"
+                >
+                    <i class="bi bi-download" aria-hidden="true"></i>
+                </button>
+            </div>
 
-        <hr class="separator" />
+            <hr class="separator" />
 
-        <div class="tool-group" role="group" aria-label="Edit history">
-            <button
-                type="button"
-                class="tool-button"
-                aria-label="Undo"
-                title="Undo last edit (Ctrl+Z)"
-                :disabled="!hasImage || busy || !canUndo"
-                @click="emit('undo')"
+            <div class="tool-group" role="group" aria-label="Edit history">
+                <button
+                    type="button"
+                    class="tool-button"
+                    aria-label="Undo"
+                    title="Undo last edit (Ctrl+Z)"
+                    :disabled="!hasImage || busy || !canUndo"
+                    @click="emit('undo')"
+                >
+                    <UndoIcon />
+                </button>
+                <button
+                    type="button"
+                    class="tool-button"
+                    aria-label="Redo"
+                    title="Redo last undone edit (Ctrl+Y or Ctrl+Shift+Z)"
+                    :disabled="!hasImage || busy || !canRedo"
+                    @click="emit('redo')"
+                >
+                    <RedoIcon />
+                </button>
+            </div>
+
+            <hr class="separator" />
+
+            <EditorToolFoldout
+                v-if="collapsed"
+                v-model:open="foldoutOpen"
+                label="More tools"
+                :active="foldoutToolActive"
             >
-                <UndoIcon />
-            </button>
-            <button
-                type="button"
-                class="tool-button"
-                aria-label="Redo"
-                title="Redo last undone edit (Ctrl+Y or Ctrl+Shift+Z)"
-                :disabled="!hasImage || busy || !canRedo"
-                @click="emit('redo')"
-            >
-                <RedoIcon />
-            </button>
-        </div>
-
-        <hr class="separator" />
-
-        <EditorToolFoldout
-            v-if="collapsed"
-            v-model:open="foldoutOpen"
-            label="More tools"
-            :active="foldoutToolActive"
-        >
+                <EditorToolGroups
+                    layout="foldout"
+                    :active-tool="activeTool"
+                    :has-image="hasImage"
+                    :busy="busy"
+                    :can-zoom-in="canZoomIn"
+                    :can-zoom-out="canZoomOut"
+                    @select-tool="selectTool"
+                    @zoom-in="emit('zoom-in')"
+                    @zoom-out="emit('zoom-out')"
+                />
+            </EditorToolFoldout>
             <EditorToolGroups
-                layout="foldout"
+                v-else
+                layout="rail"
                 :active-tool="activeTool"
                 :has-image="hasImage"
                 :busy="busy"
@@ -113,25 +128,17 @@
                 @zoom-in="emit('zoom-in')"
                 @zoom-out="emit('zoom-out')"
             />
-        </EditorToolFoldout>
-        <EditorToolGroups
-            v-else
-            layout="rail"
-            :active-tool="activeTool"
-            :has-image="hasImage"
-            :busy="busy"
-            :can-zoom-in="canZoomIn"
-            :can-zoom-out="canZoomOut"
-            @select-tool="selectTool"
-            @zoom-in="emit('zoom-in')"
-            @zoom-out="emit('zoom-out')"
-        />
+        </fieldset>
     </nav>
 </template>
 
 <style scoped src="./toolButtons.css"></style>
 
 <style scoped>
+.tool-rail__controls {
+    display: contents;
+}
+
 .tool-rail {
     display: flex;
     flex-direction: column;

@@ -27,13 +27,14 @@ class HostElement extends EventTarget {
     captures = new Set<number>();
     captureError = false;
     panel: HostElement | null = null;
+    showCount = 0;
 
     constructor(tag: string) {
         super();
         this.tag = tag;
     }
 
-    showModal() {}
+    show() { this.showCount += 1; }
     close() {}
     focus() {}
 
@@ -88,6 +89,7 @@ class HostElement extends EventTarget {
 }
 
 function setup(t: TestContext, component = modal) {
+    let cancelCount = 0;
     const elements: HostElement[] = [];
     const body = new HostElement('body');
     const browserWindow = Object.assign(new EventTarget(), { innerWidth: 1000, innerHeight: 800 });
@@ -120,7 +122,7 @@ function setup(t: TestContext, component = modal) {
         querySelector: () => body,
     });
     const app = renderer.createApp(component, component === modal
-        ? { title: 'Levels', canApply: true, busy: false }
+        ? { title: 'Levels', canApply: true, busy: false, onCancel: () => { cancelCount += 1; } }
         : { label: 'Crop toolbar' });
     app.mount(new HostElement('root'));
     t.after(() => {
@@ -133,8 +135,27 @@ function setup(t: TestContext, component = modal) {
     const grip = elements.find(element => element.props.class === (component === modal ? 'tool-modal__grip' : 'floating-toolbar__grip'))!;
     grip.panel = dialog;
     const isDragging = () => String(dialog.props.class).includes('is-dragging');
-    return { app, dialog, grip, isDragging, browserWindow, browserDocument };
+    return { app, dialog, grip, isDragging, browserWindow, browserDocument, cancelCount: () => cancelCount };
 }
+
+test('popup opens without making the header inert and supports Escape outside the dialog', (t) => {
+    const { dialog, browserDocument, cancelCount } = setup(t);
+    assert.equal(dialog.showCount, 1, 'open as a non-modal dialog so header controls remain reachable');
+    const escape = new Event('keydown', { cancelable: true });
+    Object.defineProperty(escape, 'key', { value: 'Escape' });
+    browserDocument.dispatchEvent(escape);
+    assert.equal(cancelCount(), 1);
+    assert.equal(escape.defaultPrevented, true);
+});
+
+test('popup does not cancel when a header control already handled Escape', (t) => {
+    const { browserDocument, cancelCount } = setup(t);
+    const escape = new Event('keydown', { cancelable: true });
+    Object.defineProperty(escape, 'key', { value: 'Escape' });
+    escape.preventDefault();
+    browserDocument.dispatchEvent(escape);
+    assert.equal(cancelCount(), 0, 'cancelling filename editing must not also discard popup edits');
+});
 
 for (const [name, component] of [['popup', modal], ['floating toolbar', toolbar]] as const) {
     test(`${name} stays stationary on resize until an edge meets the grip`, async (t) => {

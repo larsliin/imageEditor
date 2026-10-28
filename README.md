@@ -94,6 +94,12 @@ unpacked Chrome extension to open the editor from the browser toolbar.
   hiding the page ends the drag; returning with no button held never moves the
   dialog. Focus the grip and use arrow keys to move it, or Home or a double-click
   to reset its position.
+- **Popup workflow:** while Levels, Curves, Color mode, or Export is open,
+  toolbar buttons are disabled and dimmed until you apply/download or cancel.
+  Popups and floating toolbars share the same drop shadow, with no backdrop
+  dimming or image filter. Only the area immediately around a panel is shaded by its
+  shadow. The canvas is not interactive. Header controls (filename, pixel rulers, and theme) remain
+  available. Crop, Resize, and Rotate keep their floating-toolbar workflow.
 - **Switch between dark and light themes** with the theme button. The choice is
   saved locally in the browser.
 - **Export** from the download icon opens an export dialog with JPEG,
