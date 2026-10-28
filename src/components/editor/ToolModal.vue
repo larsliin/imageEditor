@@ -331,7 +331,7 @@
 
 @media (max-width: 1440px), (max-height: 800px) {
     .tool-modal--compact-on-small-screens {
-        width: min(360px, calc(100vw - 32px));
+        width: min(320px, calc(100vw - 32px));
         font-size: 13px;
     }
 
@@ -354,9 +354,4 @@
     }
 }
 
-@media (max-width: 480px), (max-height: 740px) {
-    .tool-modal--compact-on-small-screens {
-        width: min(320px, calc(100vw - 32px));
-    }
-}
 </style>

@@ -82,9 +82,9 @@ unpacked Chrome extension to open the editor from the browser toolbar.
   channels. Add and move curve points on the graph, edit a selected point with
   the keyboard or numeric fields, and preview or cancel before applying.
   The popup keeps a vertical layout at every screen size. Windows up to 1440px
-  wide or 800px tall use a smaller popup, height-aware graph, controls, and spacing.
-  Windows up to 480px wide or 740px tall further reduce the popup and graph
-  without shrinking labels, controls, or spacing.
+  wide or 800px tall share one compact layout with a 320px popup, 220px graph,
+  smaller controls, and tighter spacing.
+  Graph sizes stay fixed within each breakpoint rather than shrinking to fit.
   The title and Cancel/Apply actions stay visible while the fields scroll when
   space is especially limited.
 - **Color mode** converts an image to grayscale or to a black-and-white bitmap

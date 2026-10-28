@@ -4,7 +4,7 @@
     }
 
     .graph {
-        width: min(100%, 260px, max(140px, calc(100dvh - 280px)));
+        width: 220px;
     }
 
     .fields {
@@ -23,11 +23,5 @@
     .reset-button {
         min-height: 30px;
         padding: 4px 10px;
-    }
-}
-
-@media (max-width: 480px), (max-height: 740px) {
-    .graph {
-        width: min(100%, 220px, max(140px, calc(100dvh - 300px)));
     }
 }

@@ -318,7 +318,8 @@
 
 .graph {
     display: block;
-    width: min(100%, 340px, max(180px, calc(100dvh - 350px)));
+    flex-shrink: 0;
+    width: 340px;
     aspect-ratio: 1;
     margin: 0 auto;
     touch-action: none;
