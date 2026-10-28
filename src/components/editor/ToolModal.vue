@@ -48,15 +48,6 @@
         };
     }
 
-    function onGripMove(event: PointerEvent) {
-        const { clientX: x, clientY: y } = event;
-        if (dragging.value && (y < 0 || x < 0 || x > window.innerWidth || y > window.innerHeight)) {
-            onPointerEnd(event);
-            return;
-        }
-        onPointerMove(event);
-    }
-
     function keepInViewport() {
         nudge(0, 0);
     }
@@ -127,15 +118,13 @@
                         :aria-label="`Move ${title} dialog. Use arrow keys to move; Home resets the position.`"
                         title="Drag to move; double-click to reset"
                         @pointerdown="onPointerDown"
-                        @pointermove="onGripMove"
+                        @pointermove="onPointerMove"
                         @pointerup="onPointerEnd"
                         @pointercancel="onPointerEnd"
                         @lostpointercapture="onPointerEnd"
                         @dblclick="reset"
                         @keydown="moveWithKeyboard"
-                    >
-                        <i class="bi bi-grip-horizontal tool-modal__grip-icon" aria-hidden="true"></i>
-                    </button>
+                    ></button>
                 </header>
                 <fieldset class="tool-modal__fields" :disabled="busy">
                     <slot />
@@ -222,18 +211,18 @@
 .tool-modal__grip {
     position: absolute;
     /* Sits just below the dialog's top edge; offsets the form's top padding. */
-    top: -20px;
+    top: -16px;
     left: 50%;
-    display: grid;
-    place-items: center;
     flex: 0 0 auto;
-    width: 40px;
-    height: 24px;
+    width: 38px;
+    height: 12px;
     padding: 0;
-    color: var(--color-text-muted);
-    background: transparent;
+    background-color: transparent;
+    background-image: radial-gradient(circle, var(--color-text-muted) 1px, transparent 1.5px);
+    background-position: center;
+    background-size: 4px 4px;
     border: 0;
-    border-radius: 6px;
+    border-radius: 0;
     transform: translateX(-50%);
     cursor: grab;
     touch-action: none;
@@ -241,13 +230,7 @@
 }
 
 .tool-modal__grip:hover {
-    color: var(--color-text);
-}
-
-.tool-modal__grip-icon {
-    font-size: 20px;
-    line-height: 1;
-    pointer-events: none;
+    background-color: var(--color-hover);
 }
 
 .tool-modal__grip:focus-visible {

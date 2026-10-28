@@ -1,4 +1,4 @@
-import { computed, shallowRef } from 'vue';
+import { computed, onScopeDispose, shallowRef } from 'vue';
 import type { Point } from '@/lib/crop';
 
 // The parameter is part of the callback type and is intentionally not referenced here.
@@ -10,6 +10,7 @@ export function useDragOffset(options: { onEnd?: () => void, clamp?: ClampOffset
     const offset = shallowRef<Point>({ x: 0, y: 0 });
     const dragging = shallowRef(false);
     let pointerId: number | null = null;
+    let captureTarget: Element | null = null;
     let origin: Point = { x: 0, y: 0 };
     let startOffset: Point = { x: 0, y: 0 };
 
@@ -22,32 +23,55 @@ export function useDragOffset(options: { onEnd?: () => void, clamp?: ClampOffset
         event.preventDefault();
         try {
             event.currentTarget.setPointerCapture(event.pointerId);
-        } catch {
-            // Capture can fail for inactive pointers; dragging still works while over the grip.
+        } catch (error) {
+            if (!(error instanceof DOMException) || error.name !== 'NotFoundError') throw error;
+            console.warn('Unable to capture an inactive pointer for dragging:', error);
+            return;
         }
         pointerId = event.pointerId;
+        captureTarget = event.currentTarget;
         origin = { x: event.clientX, y: event.clientY };
         startOffset = offset.value;
         dragging.value = true;
+        window.addEventListener('blur', finishDrag);
+        document.addEventListener('visibilitychange', onVisibilityChange);
     }
 
     function onPointerMove(event: PointerEvent) {
         if (event.pointerId !== pointerId) return;
+        // A release outside the browser can be missed; trust the button state on reentry.
+        if ((event.buttons & 1) === 0) {
+            finishDrag();
+            return;
+        }
         setOffset({
             x: startOffset.x + event.clientX - origin.x,
             y: startOffset.y + event.clientY - origin.y,
         });
     }
 
-    function onPointerEnd(event: PointerEvent) {
-        if (event.pointerId !== pointerId) return;
-        if (event.currentTarget instanceof Element && event.currentTarget.hasPointerCapture(event.pointerId)) {
-            event.currentTarget.releasePointerCapture(event.pointerId);
-        }
+    function finishDrag() {
+        if (pointerId === null) return;
+        const releasedPointer = pointerId;
+        const target = captureTarget;
         pointerId = null;
+        captureTarget = null;
         dragging.value = false;
+        window.removeEventListener('blur', finishDrag);
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+        if (target?.hasPointerCapture(releasedPointer)) target.releasePointerCapture(releasedPointer);
         options.onEnd?.();
     }
+
+    function onPointerEnd(event: PointerEvent) {
+        if (event.pointerId === pointerId) finishDrag();
+    }
+
+    function onVisibilityChange() {
+        if (document.hidden) finishDrag();
+    }
+
+    onScopeDispose(finishDrag);
 
     function nudge(dx: number, dy: number) {
         setOffset({ x: offset.value.x + dx, y: offset.value.y + dy });

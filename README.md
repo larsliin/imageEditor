@@ -80,6 +80,12 @@ unpacked Chrome extension to open the editor from the browser toolbar.
 - **Color mode** converts an image to grayscale or to a black-and-white bitmap
   using a 50% threshold. Grayscale preserves transparency; bitmap conversion
   composites transparent pixels onto white and preserves the selected export format.
+  Color-tool dialogs can be moved by their grip. Pointer capture keeps a held
+  drag active outside the window and resumes movement on return, while the grip
+  stays within reach. Releasing the button, losing capture or window focus, or
+  hiding the page ends the drag; returning with no button held never moves the
+  dialog. Focus the grip and use arrow keys to move it, or Home or a double-click
+  to reset its position.
 - **Switch between dark and light themes** with the theme button. The choice is
   saved locally in the browser.
 - **Export** from the download icon opens an export dialog with JPEG,
