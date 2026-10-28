@@ -260,9 +260,9 @@
                 />
             </div>
             <div v-else class="empty-state">
-                <h1 class="empty-state__headline">Simple image editing</h1>
+                <h1 class="empty-state__headline">Drop it, trim it, done.</h1>
                 <p class="empty-state__intro">
-                    A simple editor to crop, resize, and adjust image colors.
+                    Simple edits for everyday images
                 </p>
                 <button type="button" class="import-button" @click="emit('import')">
                     <span>Open image</span>
@@ -415,7 +415,7 @@
 
 .empty-state__title {
     margin: 0;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     line-height: 1.3;
 }
