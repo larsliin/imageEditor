@@ -26,6 +26,14 @@ export function isValidCrop(crop: CropRect, image: Size): boolean {
     );
 }
 
+export function snapCropToPixels(crop: CropRect, image: Size): CropRect {
+    const x = Math.max(0, Math.min(image.width - 1, Math.round(crop.x)));
+    const y = Math.max(0, Math.min(image.height - 1, Math.round(crop.y)));
+    const right = Math.min(image.width, Math.max(x + 1, Math.round(crop.x + crop.width)));
+    const bottom = Math.min(image.height, Math.max(y + 1, Math.round(crop.y + crop.height)));
+    return { x, y, width: right - x, height: bottom - y };
+}
+
 export const MAX_STRAIGHTEN_ANGLE = 45;
 
 export function isValidAngle(angle: number): boolean {

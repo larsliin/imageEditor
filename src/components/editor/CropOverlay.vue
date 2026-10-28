@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue';
-    import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, isValidCrop, previewToImagePoint, isCropInsideRotatedImage, isValidAngle, largestCropInsideRotatedImage, type CropRect, type CropHandle, type Point } from '@/lib/crop';
+    import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, snapCropToPixels, isValidCrop, previewToImagePoint, isCropInsideRotatedImage, isValidAngle, largestCropInsideRotatedImage, type CropRect, type CropHandle, type Point } from '@/lib/crop';
     import type { Size } from '@/lib/zoom';
     import CropControls from './CropControls.vue';
 
@@ -28,6 +28,9 @@
 
     const snapToPixel = shallowRef(loadSnapPreference());
     watch(snapToPixel, (value) => {
+        if (value && isValidCrop(crop.value, props.image)) {
+            crop.value = snapCropToPixels(crop.value, props.image);
+        }
         try {
             localStorage.setItem(snapPreferenceKey, String(value));
         } catch (error) {

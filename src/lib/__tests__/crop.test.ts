@@ -1,6 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, isValidCrop, previewToImagePoint, type CropHandle, largestCropInsideRotatedImage, isCropInsideRotatedImage } from '../crop.ts';
+import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, snapCropToPixels, isValidCrop, previewToImagePoint, type CropHandle, largestCropInsideRotatedImage, isCropInsideRotatedImage } from '../crop.ts';
+
+test('pixel snapping keeps tiny selections non-empty and inside image bounds', () => {
+    const image = { width: 800, height: 600 };
+    for (const crop of [
+        { x: 10.1, y: 20.1, width: 0.2, height: 0.2 },
+        { x: 799.6, y: 599.6, width: 0.3, height: 0.3 },
+    ]) {
+        const snapped = snapCropToPixels(crop, image);
+        assert.equal(isValidCrop(snapped, image), true);
+        assert.equal(snapped.width, 1);
+        assert.equal(snapped.height, 1);
+        assert.ok(Object.values(snapped).every(Number.isInteger));
+    }
+});
 
 test('accepts full image, edge-aligned, and single-pixel crops', () => {
     const image = { width: 800, height: 600 };

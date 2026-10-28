@@ -260,15 +260,11 @@
                 />
             </div>
             <div v-else class="empty-state">
-                <h1 class="empty-state__headline">Drop it, trim it, done.</h1>
-                <p class="empty-state__intro">
-                    Simple edits for everyday images
-                </p>
                 <button type="button" class="import-button" @click="emit('import')">
                     <span>Open image</span>
                 </button>
                 <span class="empty-state__separator">or</span>
-                <p class="empty-state__title">Drop an image</p>
+                <p class="empty-state__title">Drag and drop it here</p>
             </div>
         </div>
 
@@ -375,20 +371,6 @@
     gap: 12px;
     justify-content: center;
     text-align: center;
-}
-
-.empty-state__headline {
-    margin: 0;
-    color: var(--color-text-muted);
-    font-size: 24px;
-    font-weight: 600;
-    line-height: 1.25;
-}
-
-.empty-state__intro {
-    max-width: 28rem;
-    margin: 0 0 20px;
-    line-height: 1.5;
 }
 
 .workspace.is-drop-active .empty-state__title {

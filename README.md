@@ -20,6 +20,12 @@ unpacked Chrome extension to open the editor from the browser toolbar.
   Press or release Shift mid-drag to toggle the constraint. Focus a handle and
   use arrow keys for one-pixel adjustments. Resizing cannot cross the opposite edge
   or extend outside the image.
+  **Snap to pixel** aligns crop edges to whole source-image pixels. Enabling it
+  also rounds an existing fractional selection immediately, keeping at least one
+  pixel in each dimension. Snapping is off by default and the setting is saved
+  locally in the browser.
+  Toolbar width and height values display at most one decimal place without
+  reducing the precision of the crop selection.
   Straightening automatically fits the crop inside the rotated image. An
   automatically fitted crop expands again when rotating back, including when
   resetting the angle to zero. Manual selections that still fit are preserved.

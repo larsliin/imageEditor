@@ -34,7 +34,10 @@ const renderer = createRenderer<object, object>({
 interface CropState extends ComponentPublicInstance {
     crop: CropRect
     angle: number
+    snapToPixel: boolean
     onFormInput: globalThis.EventListener
+    // eslint-disable-next-line no-unused-vars
+    resizeWithKeyboard(event: KeyboardEvent, handle: 'e'): void
 }
 
 function markManual(state: CropState) {
@@ -42,6 +45,55 @@ function markManual(state: CropState) {
     Object.defineProperty(event, 'target', { value: { getAttribute: () => 'Crop width' } });
     state.onFormInput(event);
 }
+
+test('enabling pixel snapping immediately rounds existing fractional crop edges', async (t) => {
+    const storageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    const saved = new Map<string, string>();
+    Object.defineProperty(globalThis, 'localStorage', {
+        configurable: true,
+        value: { getItem: (key: string) => saved.get(key) ?? null, setItem: (key: string, value: string) => saved.set(key, value) },
+    });
+    t.after(() => {
+        if (storageDescriptor) Object.defineProperty(globalThis, 'localStorage', storageDescriptor);
+        else Reflect.deleteProperty(globalThis, 'localStorage');
+    });
+    for (const image of [{ width: 800, height: 600 }, { width: 600, height: 800 }]) {
+        saved.clear();
+        const app = renderer.createApp({ ...overlay, render: () => null }, { image, disabled: false, panMode: false });
+        const state = app.mount({}) as CropState;
+        try {
+            assert.equal(state.snapToPixel, false);
+            state.crop = { x: 10.4, y: 20.6, width: 20.2, height: 21.2 };
+            markManual(state);
+            await nextTick();
+
+            state.snapToPixel = true;
+            await nextTick();
+            assert.deepEqual(state.crop, { x: 10, y: 21, width: 21, height: 21 });
+            assert.equal(saved.get('image-editor-crop-snap-to-pixel'), 'true');
+
+            const arrow = new Event('keydown');
+            Object.defineProperties(arrow, { key: { value: 'ArrowRight' }, shiftKey: { value: false } });
+            state.resizeWithKeyboard(arrow as KeyboardEvent, 'e');
+            await nextTick();
+            assert.deepEqual(state.crop, { x: 10, y: 21, width: 22, height: 21 });
+
+            state.snapToPixel = false;
+            await nextTick();
+            state.crop = { x: 10.4, y: 20.6, width: 20.2, height: 21.2 };
+            await nextTick();
+            assert.equal(state.crop.x, 10.4, 'unsnapped selections retain fractional coordinates');
+
+            state.crop = { x: image.width - 1.4, y: image.height - 1.4, width: 1.3, height: 1.3 };
+            await nextTick();
+            state.snapToPixel = true;
+            await nextTick();
+            assert.deepEqual(state.crop, { x: image.width - 1, y: image.height - 1, width: 1, height: 1 });
+        } finally {
+            app.unmount();
+        }
+    }
+});
 
 for (const image of [{ width: 800, height: 600 }, { width: 600, height: 800 }]) {
     for (const direction of [-1, 1]) {

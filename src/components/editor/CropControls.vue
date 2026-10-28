@@ -27,10 +27,14 @@
         emit('update:crop', { ...props.crop, [field]: value });
     }
 
+    function displayDimension(value: number): number {
+        return Number.isFinite(value) ? Number(value.toFixed(1)) : value;
+    }
+
     const cropX = computed({ get: () => props.crop.x, set: (value: number) => updateCrop('x', value) });
     const cropY = computed({ get: () => props.crop.y, set: (value: number) => updateCrop('y', value) });
-    const cropWidth = computed({ get: () => props.crop.width, set: (value: number) => updateCrop('width', value) });
-    const cropHeight = computed({ get: () => props.crop.height, set: (value: number) => updateCrop('height', value) });
+    const cropWidth = computed({ get: () => displayDimension(props.crop.width), set: (value: number) => updateCrop('width', value) });
+    const cropHeight = computed({ get: () => displayDimension(props.crop.height), set: (value: number) => updateCrop('height', value) });
 
     function zeroIfEmpty(event: FocusEvent, field: keyof CropRect | 'angle') {
         if ((event.target as HTMLInputElement).value !== '') return;
@@ -56,9 +60,11 @@
                         <label>Y <input v-model.number="cropY" aria-label="Crop Y" type="number" min="0"
                             :max="image.height - 1" required :step="snapToPixel ? 1 : 'any'" @blur="zeroIfEmpty($event, 'y')" /></label>
                         <label>Width <input v-model.number="cropWidth" aria-label="Crop width" type="number" min="1"
-                            :max="image.width - crop.x" required :step="snapToPixel ? 1 : 'any'" @blur="zeroIfEmpty($event, 'width')" /></label>
+                            :max="displayDimension(image.width - crop.x)" required :step="snapToPixel ? 1 : 'any'"
+                            @blur="zeroIfEmpty($event, 'width')" /></label>
                         <label>Height <input v-model.number="cropHeight" aria-label="Crop height" type="number" min="1"
-                            :max="image.height - crop.y" required :step="snapToPixel ? 1 : 'any'" @blur="zeroIfEmpty($event, 'height')" /></label>
+                            :max="displayDimension(image.height - crop.y)" required :step="snapToPixel ? 1 : 'any'"
+                            @blur="zeroIfEmpty($event, 'height')" /></label>
                         <label class="crop-snap">
                             <input
                                 v-model="snapToPixel"
