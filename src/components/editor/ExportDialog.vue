@@ -48,7 +48,7 @@
 <template>
     <ToolModal
         title="Export"
-        apply-label="Download"
+        apply-label="Export"
         compact
         focus-title
         :draggable="false"

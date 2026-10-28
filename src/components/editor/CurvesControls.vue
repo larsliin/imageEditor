@@ -227,7 +227,7 @@
         :can-apply="valid && !unchanged"
         :busy="disabled"
         :error="error"
-        wide-on-short-screens
+        compact-on-small-screens
         scroll-body
         @apply="apply"
         @cancel="cancel"

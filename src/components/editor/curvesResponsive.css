@@ -1,41 +1,33 @@
-@media (min-width: 640px) and (max-height: 740px) {
+@media (max-width: 1440px), (max-height: 800px) {
     .curves {
-        display: grid;
-        grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
-        column-gap: 16px;
-        align-items: start;
+        gap: 6px;
     }
 
     .graph {
-        grid-column: 1;
-        grid-row: 1 / 4;
-        width: min(100%, max(140px, calc(100dvh - 180px)));
-    }
-
-    .field--channel {
-        grid-column: 2;
-        grid-row: 1;
-        max-width: none;
+        width: min(100%, 260px, max(140px, calc(100dvh - 280px)));
     }
 
     .fields {
-        grid-column: 2;
-        grid-row: 2;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
     }
 
+    .field {
+        gap: 4px;
+    }
+
+    .field__input {
+        min-height: 30px;
+        padding: 4px 8px;
+    }
+
     .reset-button {
-        grid-column: 1 / -1;
+        min-height: 30px;
+        padding: 4px 10px;
     }
+}
 
-    .preview-toggle {
-        grid-column: 2;
-        grid-row: 3;
-    }
-
-    .hint {
-        grid-column: 1 / -1;
-        grid-row: 4;
+@media (max-width: 480px), (max-height: 740px) {
+    .graph {
+        width: min(100%, 220px, max(140px, calc(100dvh - 300px)));
     }
 }

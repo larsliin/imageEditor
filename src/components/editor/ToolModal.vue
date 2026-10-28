@@ -13,7 +13,7 @@
         compact?: boolean
         focusTitle?: boolean
         draggable?: boolean
-        wideOnShortScreens?: boolean
+        compactOnSmallScreens?: boolean
         scrollBody?: boolean
     }>(), {
         applyLabel: 'Apply',
@@ -21,7 +21,7 @@
         compact: false,
         focusTitle: false,
         draggable: true,
-        wideOnShortScreens: false,
+        compactOnSmallScreens: false,
         scrollBody: false,
     });
 
@@ -107,7 +107,7 @@
             :class="{
                 'tool-modal--compact': compact,
                 'tool-modal--static': !draggable,
-                'tool-modal--wide-on-short-screens': wideOnShortScreens,
+                'tool-modal--compact-on-small-screens': compactOnSmallScreens,
                 'tool-modal--scroll-body': scrollBody,
                 'is-dragging': dragging,
             }"
@@ -329,9 +329,34 @@
     outline-offset: 2px;
 }
 
-@media (min-width: 640px) and (max-height: 740px) {
-    .tool-modal--wide-on-short-screens {
-        width: 460px;
+@media (max-width: 1440px), (max-height: 800px) {
+    .tool-modal--compact-on-small-screens {
+        width: min(360px, calc(100vw - 32px));
+        font-size: 13px;
+    }
+
+    .tool-modal--compact-on-small-screens .tool-modal__form {
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .tool-modal--compact-on-small-screens .tool-modal__title {
+        font-size: 16px;
+    }
+
+    .tool-modal--compact-on-small-screens .tool-modal__grip {
+        top: -12px;
+    }
+
+    .tool-modal--compact-on-small-screens .tool-modal__button {
+        min-height: 30px;
+        padding: 4px 10px;
+    }
+}
+
+@media (max-width: 480px), (max-height: 740px) {
+    .tool-modal--compact-on-small-screens {
+        width: min(320px, calc(100vw - 32px));
     }
 }
 </style>
