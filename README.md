@@ -78,6 +78,9 @@ unpacked Chrome extension to open the editor from the browser toolbar.
   the preview. Four quarter-turns return to the unchanged image.
 - **Levels** adjusts the black point, midtone gamma, and white point with a
   luminosity histogram. Adjustments can be previewed, applied, or cancelled.
+  Like Curves, windows up to 1440px wide or 800px tall use a narrower 320px
+  popup with compact controls and spacing. The fields scroll when needed,
+  keeping the title and Cancel/Apply actions visible.
 - **Curves** adjusts the composite RGB curve or individual red, green, and blue
   channels. Add and move curve points on the graph, edit a selected point with
   the keyboard or numeric fields, and preview or cancel before applying.

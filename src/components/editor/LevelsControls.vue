@@ -154,6 +154,8 @@
         :can-apply="valid && !unchanged"
         :busy="disabled"
         :error="error"
+        compact-on-small-screens
+        scroll-body
         @apply="apply"
         @cancel="cancel"
     >
@@ -393,5 +395,24 @@
 
 .validation-message {
     color: #fecaca;
+}
+
+@media (max-width: 1440px), (max-height: 800px) {
+    .levels {
+        gap: 6px;
+    }
+
+    .fields {
+        gap: 8px;
+    }
+
+    .field {
+        gap: 4px;
+    }
+
+    .field__input {
+        min-height: 30px;
+        padding: 4px 8px;
+    }
 }
 </style>
