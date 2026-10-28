@@ -21,6 +21,7 @@
     }>();
 
     const angle = defineModel<number>('angle', { required: true });
+    const snapToPixel = defineModel<boolean>('snapToPixel', { required: true });
 
     function updateCrop(field: keyof CropRect, value: number) {
         emit('update:crop', { ...props.crop, [field]: value });
@@ -51,13 +52,22 @@
                 <fieldset :disabled="disabled || dragging">
                     <div class="crop-fields">
                         <label>X <input v-model.number="cropX" aria-label="Crop X" type="number" min="0"
-                            :max="image.width - 1" required step="1" @blur="zeroIfEmpty($event, 'x')" /></label>
+                            :max="image.width - 1" required :step="snapToPixel ? 1 : 'any'" @blur="zeroIfEmpty($event, 'x')" /></label>
                         <label>Y <input v-model.number="cropY" aria-label="Crop Y" type="number" min="0"
-                            :max="image.height - 1" required step="1" @blur="zeroIfEmpty($event, 'y')" /></label>
+                            :max="image.height - 1" required :step="snapToPixel ? 1 : 'any'" @blur="zeroIfEmpty($event, 'y')" /></label>
                         <label>Width <input v-model.number="cropWidth" aria-label="Crop width" type="number" min="1"
-                            :max="image.width - crop.x" required step="1" @blur="zeroIfEmpty($event, 'width')" /></label>
+                            :max="image.width - crop.x" required :step="snapToPixel ? 1 : 'any'" @blur="zeroIfEmpty($event, 'width')" /></label>
                         <label>Height <input v-model.number="cropHeight" aria-label="Crop height" type="number" min="1"
-                            :max="image.height - crop.y" required step="1" @blur="zeroIfEmpty($event, 'height')" /></label>
+                            :max="image.height - crop.y" required :step="snapToPixel ? 1 : 'any'" @blur="zeroIfEmpty($event, 'height')" /></label>
+                        <label class="crop-snap">
+                            <input
+                                v-model="snapToPixel"
+                                aria-label="Snap to pixel"
+                                title="Keep crop edges aligned to source pixels while dragging."
+                                type="checkbox"
+                            />
+                            Snap to pixel
+                        </label>
                         <span class="crop-divider" role="separator" aria-orientation="vertical"></span>
                         <label class="crop-angle-slider">Straighten
                             <input v-model.number="angle" class="crop-angle-range" aria-label="Straighten angle slider" type="range"
@@ -200,6 +210,14 @@ input[type='range'] {
 
 input[type='number'] {
     width: 78px;
+}
+
+input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--color-accent);
 }
 
 button {

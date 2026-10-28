@@ -45,6 +45,16 @@ unpacked Chrome extension to open the editor from the browser toolbar.
   inside the toolbar without discarding the entered dimensions. Like the crop
   toolbar, drag its grip to reposition it, or focus the grip and use arrow keys
   (Shift for larger steps). Home or double-clicking the grip resets its position.
+- **Pixel rulers** toggle on and off with the **px** button in the header.
+  The top and left rulers measure the current image in pixels from its top-left
+  corner, tracking zoom, pan, resizing, cropping, and rotation previews.
+  Both rulers span the full viewport, with unsigned distances before the
+  image origin and continued coordinates beyond the image edges.
+  Rulers are hidden by default; the toggle setting is saved locally in the
+  browser and restored when the app opens. Rulers never appear in exported images.
+  Crop, resize, and rotate toolbars open below the top ruler when it is visible.
+  Fit-to-window accounts for the rulers and preserves a 24px gap between the
+  image and the rulers.
 - **Rotate** opens a draggable toolbar with clockwise and counterclockwise
   90-degree preview buttons, followed by Apply and Cancel icons. Apply commits
   the rotation as one undoable edit; Cancel, Escape, or switching tools discards

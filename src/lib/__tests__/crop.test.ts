@@ -49,8 +49,9 @@ test('square crops support single-axis drags and leave clicks empty', () => {
     assert.equal(isValidCrop(squareCropFromPoints(start, start, image), image), false);
 });
 
-test('rejects empty, fractional, non-finite, and out-of-bounds crops', () => {
+test('accepts fractional crop bounds and rejects empty, non-finite, and out-of-bounds crops', () => {
     const image = { width: 800, height: 600 };
+    assert.equal(isValidCrop({ x: 0.5, y: 1.25, width: 20.5, height: 30.75 }, image), true);
     for (const crop of [
         { x: 0, y: 0, width: 0, height: 1 },
         { x: 0, y: 0, width: 1, height: -1 },
@@ -58,7 +59,6 @@ test('rejects empty, fractional, non-finite, and out-of-bounds crops', () => {
         { x: 0, y: -1, width: 1, height: 1 },
         { x: 799, y: 0, width: 2, height: 1 },
         { x: 0, y: 599, width: 1, height: 2 },
-        { x: 0.5, y: 0, width: 1, height: 1 },
         { x: 0, y: 0, width: NaN, height: 1 },
         { x: Infinity, y: 0, width: 1, height: 1 },
     ]) {
@@ -86,6 +86,8 @@ test('uses actual rounded preview dimensions and clamps drags outside the image'
     assert.deepEqual(previewToImagePoint({ x: -40, y: 0 }, preview, image), { x: 0, y: 0 });
     assert.deepEqual(previewToImagePoint({ x: 100, y: 200 }, preview, image), { x: 100, y: 201 });
     assert.deepEqual(previewToImagePoint({ x: -3.5, y: 73.5 }, preview, image), { x: 50, y: 101 });
+    assert.deepEqual(previewToImagePoint({ x: -3.5, y: 73.5 }, preview, image, false),
+        { x: 50, y: 100.5 });
     assert.throws(() => previewToImagePoint({ x: 0, y: 0 }, { ...preview, width: 0 }, image));
 });
 

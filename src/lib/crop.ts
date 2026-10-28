@@ -16,7 +16,7 @@ export type CropHandle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
 
 export function isValidCrop(crop: CropRect, image: Size): boolean {
     return (
-        [crop.x, crop.y, crop.width, crop.height].every(Number.isSafeInteger)
+        [crop.x, crop.y, crop.width, crop.height].every(Number.isFinite)
     && crop.x >= 0
     && crop.y >= 0
     && crop.width > 0
@@ -82,13 +82,18 @@ export function previewToImagePoint(
     point: Point,
     preview: { left: number; top: number; width: number; height: number },
     image: Size,
+    snapToPixel = true,
 ): Point {
     if (preview.width <= 0 || preview.height <= 0) {
         throw new Error('The image preview has no drawable area.');
     }
+    const convert = (coordinate: number, origin: number, previewLength: number, imageLength: number) => {
+        const imageCoordinate = Math.max(0, Math.min(imageLength, (coordinate - origin) * imageLength / previewLength));
+        return snapToPixel ? Math.round(imageCoordinate) : imageCoordinate;
+    };
     return {
-        x: Math.round(Math.max(0, Math.min(image.width, (point.x - preview.left) * image.width / preview.width))),
-        y: Math.round(Math.max(0, Math.min(image.height, (point.y - preview.top) * image.height / preview.height))),
+        x: convert(point.x, preview.left, preview.width, image.width),
+        y: convert(point.y, preview.top, preview.height, image.height),
     };
 }
 

@@ -131,6 +131,7 @@ function mountTopBar(
     context: TestContext,
     image: ImageInfo | null,
     busy = false,
+    rulersEnabled = false,
 ) {
     const emitted: EmittedEvent[] = [];
     const app = renderer.createApp(
@@ -139,8 +140,10 @@ function mountTopBar(
             image,
             busy,
             isDarkMode: false,
+            rulersEnabled,
             onRename: (value: string) => emitted.push({ name: 'rename', value }),
             onToggleTheme: () => emitted.push({ name: 'toggle-theme' }),
+            onToggleRulers: () => emitted.push({ name: 'toggle-rulers' }),
         },
     );
     const root = markRaw(new TestElement('root'));
@@ -196,6 +199,23 @@ test('shows a fallback filename and prevents renaming when there is no image', a
     await invokeHandler(filenameInput, 'onClick', new Event('click'));
     assert.equal(filenameInput.props.readonly, true);
     assert.deepEqual(emitted, []);
+    assert.equal(findElement(root, 'aria-label', 'Pixel rulers')?.props.disabled, true);
+});
+
+test('pixel ruler toggle exposes its state and emits a toggle event', async (t) => {
+    const image: ImageInfo = { fileName: 'image.png', width: 800, height: 600, exportMimeType: 'image/png' };
+    const { root, emitted } = mountTopBar(t, image);
+    const toggle = findElement(root, 'aria-label', 'Pixel rulers');
+    assert.ok(toggle);
+    assert.equal(toggle.props['aria-pressed'], false);
+    assert.equal(toggle.props.disabled, false);
+    await invokeHandler(toggle, 'onClick', new Event('click'));
+    assert.deepEqual(emitted, [{ name: 'toggle-rulers' }]);
+
+    const enabled = mountTopBar(t, image, false, true);
+    assert.equal(findElement(enabled.root, 'aria-label', 'Pixel rulers')?.props['aria-pressed'], true);
+    const busy = mountTopBar(t, image, true);
+    assert.equal(findElement(busy.root, 'aria-label', 'Pixel rulers')?.props.disabled, true);
 });
 
 test('does not start renaming while the editor is busy', async (t) => {

@@ -11,6 +11,29 @@
     }>();
 
     const angle = defineModel<number>('angle', { default: 0 });
+    const snapPreferenceKey = 'image-editor-crop-snap-to-pixel';
+
+    function loadSnapPreference(): boolean {
+        try {
+            const preference = localStorage.getItem(snapPreferenceKey);
+            if (preference === null) return false;
+            if (preference === 'true') return true;
+            if (preference === 'false') return false;
+            console.warn('Ignoring an invalid saved crop snap preference:', preference);
+        } catch (error) {
+            console.warn('Unable to restore the saved crop snap preference:', error);
+        }
+        return false;
+    }
+
+    const snapToPixel = shallowRef(loadSnapPreference());
+    watch(snapToPixel, (value) => {
+        try {
+            localStorage.setItem(snapPreferenceKey, String(value));
+        } catch (error) {
+            console.warn('Unable to save the crop snap preference:', error);
+        }
+    });
 
     const emit = defineEmits<{
         apply: [crop: CropRect, angle: number]
@@ -100,6 +123,7 @@
             { x: event.clientX, y: event.clientY },
             element.getBoundingClientRect(),
             props.image,
+            snapToPixel.value,
         );
     }
 
@@ -234,6 +258,7 @@
         :valid="valid"
         :unchanged="unchanged"
         v-model:angle="angle"
+        v-model:snap-to-pixel="snapToPixel"
         @update:crop="crop = $event"
         @manual-change="onFormInput"
         @apply="apply"

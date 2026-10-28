@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+    import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
     import EditorTopBar from './components/editor/EditorTopBar.vue';
     import EditorToolRail from './components/editor/EditorToolRail.vue';
     import EditorCanvas from './components/editor/EditorCanvas.vue';
@@ -41,6 +41,28 @@
 
     const activeTool = ref<ToolId | null>(null);
     const exportOpen = ref(false);
+    const rulersEnabled = shallowRef(false);
+    const rulersStorageKey = 'image-editor-rulers';
+
+    try {
+        const savedRulers = localStorage.getItem(rulersStorageKey);
+        if (savedRulers === 'true' || savedRulers === 'false') {
+            rulersEnabled.value = savedRulers === 'true';
+        } else if (savedRulers !== null) {
+            console.warn('Ignoring an invalid saved rulers preference:', savedRulers);
+        }
+    } catch (error) {
+        console.warn('Unable to restore the saved rulers preference:', error);
+    }
+
+    function toggleRulers() {
+        rulersEnabled.value = !rulersEnabled.value;
+        try {
+            localStorage.setItem(rulersStorageKey, String(rulersEnabled.value));
+        } catch (error) {
+            console.warn('Unable to save the rulers preference:', error);
+        }
+    }
 
     function openExport() {
         if (!bitmap.value || isBusy.value) return;
@@ -163,8 +185,10 @@
             :image="info"
             :busy="isBusy"
             :is-dark-mode="isDarkMode"
+            :rulers-enabled="rulersEnabled"
             @rename="renameImage"
             @toggle-theme="toggleTheme"
+            @toggle-rulers="toggleRulers"
         />
         <EditorToolRail
             class="editor__tool-rail"
@@ -188,6 +212,7 @@
             class="editor__canvas"
             :bitmap="bitmap"
             :zoom="zoom"
+            :rulers-enabled="rulersEnabled"
             :pan-enabled="activeTool === 'pan'"
             :crop-enabled="activeTool === 'crop'"
             :busy="isBusy"
@@ -215,7 +240,11 @@
                 />
             </template>
         </EditorCanvas>
-        <div id="editor-tool-controls" class="floating-tool-controls"></div>
+        <div
+            id="editor-tool-controls"
+            class="floating-tool-controls"
+            :class="{ 'floating-tool-controls--with-rulers': rulersEnabled && bitmap && status !== 'loading' }"
+        ></div>
         <ExportDialog
             v-if="exportOpen && bitmap && info"
             :bitmap="bitmap"
@@ -307,5 +336,9 @@
 
 .floating-tool-controls:empty {
     display: none;
+}
+
+.floating-tool-controls--with-rulers {
+    top: 80px;
 }
 </style>

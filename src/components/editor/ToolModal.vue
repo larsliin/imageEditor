@@ -222,7 +222,7 @@
 .tool-modal__grip {
     position: absolute;
     /* Sits just below the dialog's top edge; offsets the form's top padding. */
-    top: -23px;
+    top: -20px;
     left: 50%;
     display: grid;
     place-items: center;

@@ -91,14 +91,34 @@ export async function rotateImageBitmap(source: ImageBitmap, turns: QuarterTurns
     return createImageBitmap(canvas);
 }
 
+export async function cropImageBitmap(
+    source: ImageBitmap,
+    crop: { x: number; y: number; width: number; height: number },
+): Promise<ImageBitmap> {
+    if ([crop.x, crop.y, crop.width, crop.height].every(Number.isSafeInteger)) {
+        return createImageBitmap(source, crop.x, crop.y, crop.width, crop.height);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(crop.width));
+    canvas.height = Math.max(1, Math.round(crop.height));
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('Canvas 2D rendering is not available in this browser.');
+    }
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    context.drawImage(source, crop.x, crop.y, crop.width, crop.height, 0, 0, canvas.width, canvas.height);
+    return createImageBitmap(canvas);
+}
+
 export async function rotateCropImageBitmap(
     source: ImageBitmap,
     angleDegrees: number,
     crop: { x: number; y: number; width: number; height: number },
 ): Promise<ImageBitmap> {
     const canvas = document.createElement('canvas');
-    canvas.width = crop.width;
-    canvas.height = crop.height;
+    canvas.width = Math.max(1, Math.round(crop.width));
+    canvas.height = Math.max(1, Math.round(crop.height));
     const context = canvas.getContext('2d');
     if (!context) {
         throw new Error('Canvas 2D rendering is not available in this browser.');

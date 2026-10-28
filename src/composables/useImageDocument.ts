@@ -9,6 +9,7 @@ import type { Size } from '@/lib/zoom';
 import type { QuarterTurns } from '@/lib/rotate';
 import {
     canvasToBlob,
+    cropImageBitmap,
     decodeImageFile,
     downloadBlob,
     exportFileName,
@@ -190,7 +191,7 @@ export function useImageDocument() {
         error.value = null;
         try {
             const cropped = angle === 0
-                ? await createImageBitmap(doc.bitmap, crop.x, crop.y, crop.width, crop.height)
+                ? await cropImageBitmap(doc.bitmap, crop)
                 : await rotateCropImageBitmap(doc.bitmap, angle, crop);
             if (disposed) {
                 cropped.close();

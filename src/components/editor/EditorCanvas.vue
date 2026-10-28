@@ -3,6 +3,7 @@
     import { displaySize, type Size } from '@/lib/zoom';
     import { usePan } from '@/composables/usePan';
     import CropOverlay from './CropOverlay.vue';
+    import EditorRulers from './EditorRulers.vue';
     import type { CropRect } from '@/lib/crop';
     import { applyLevelsToPixels, type LevelsParams } from '@/lib/levels';
     import { applyCurvesToPixels, type CurvesParams } from '@/lib/curves';
@@ -12,6 +13,7 @@
     const props = defineProps<{
         bitmap: ImageBitmap | null
         zoom: number
+        rulersEnabled: boolean
         panEnabled: boolean
         cropEnabled: boolean
         busy: boolean
@@ -224,6 +226,7 @@
             :class="{
                 'is-pan-mode': isPanMode,
                 'is-dragging': isDragging,
+                'viewport--with-rulers': rulersEnabled && bitmap && !loading,
             }"
             :tabindex="bitmap ? 0 : undefined"
             :aria-label="bitmap ? 'Image viewport, use arrow keys to pan' : undefined"
@@ -269,6 +272,14 @@
             </div>
         </div>
 
+        <EditorRulers
+            v-if="rulersEnabled && bitmap && !loading"
+            :viewport="viewportRef"
+            :surface="imageSurfaceRef"
+            :image="rotatedSize(bitmap, rotationPreview ?? 0)"
+            :zoom="zoom"
+        />
+
         <div v-if="isDropActive" class="drop-indicator" aria-hidden="true"></div>
 
         <slot v-if="bitmap && !loading" name="overlay" />
@@ -297,6 +308,11 @@
 
 .viewport::-webkit-scrollbar {
     display: none;
+}
+
+.viewport--with-rulers {
+    padding-top: 44px;
+    padding-left: 44px;
 }
 
 .viewport:focus {

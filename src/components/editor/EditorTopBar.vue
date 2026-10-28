@@ -6,11 +6,13 @@
         image: ImageInfo | null
         busy: boolean
         isDarkMode: boolean
+        rulersEnabled: boolean
     }>();
 
     const emit = defineEmits<{
         rename: [fileName: string]
         'toggle-theme': []
+        'toggle-rulers': []
     }>();
 
     const isEditing = shallowRef(false);
@@ -97,6 +99,18 @@
             </div>
         </dl>
         <button
+            class="rulers-toggle"
+            type="button"
+            aria-label="Pixel rulers"
+            :aria-pressed="rulersEnabled"
+            :title="rulersEnabled ? 'Hide pixel rulers' : 'Show pixel rulers'"
+            :disabled="busy || !image"
+            @click="emit('toggle-rulers')"
+        >
+            <i class="bi bi-rulers" aria-hidden="true"></i>
+            <span>px</span>
+        </button>
+        <button
             class="theme-toggle"
             type="button"
             :aria-label="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
@@ -149,13 +163,13 @@
     margin-left: 14px;
 }
 
-.theme-toggle {
+.theme-toggle,
+.rulers-toggle {
     display: grid;
     flex: 0 0 auto;
     place-items: center;
     width: 30px;
     height: 30px;
-    margin-left: auto;
     padding: 0;
     border: 1px solid var(--color-border);
     border-radius: 4px;
@@ -164,12 +178,36 @@
     cursor: pointer;
 }
 
-.theme-toggle:hover {
+.rulers-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    width: auto;
+    margin-left: auto;
+    margin-right: 8px;
+    padding: 0 8px;
+    font-size: 0.75rem;
+}
+
+.rulers-toggle[aria-pressed='true'] {
+    color: var(--color-text);
+    background-color: var(--color-active);
+    border-color: var(--color-focus);
+}
+
+.rulers-toggle:disabled {
+    opacity: var(--opacity-button-secondary-disabled);
+    cursor: default;
+}
+
+.theme-toggle:hover,
+.rulers-toggle:hover:not(:disabled) {
     color: var(--color-text);
     background-color: var(--color-hover);
 }
 
-.theme-toggle:focus-visible {
+.theme-toggle:focus-visible,
+.rulers-toggle:focus-visible {
     outline: 1px solid var(--color-focus);
     outline-offset: 1px;
 }
