@@ -24,7 +24,9 @@ unpacked Chrome extension to open the editor from the browser toolbar.
   automatically fitted crop expands again when rotating back, including when
   resetting the angle to zero. Manual selections that still fit are preserved.
 - **Zoom and pan** around the preview, including fit-to-window and actual-size
-  views. Fit-to-window scales smaller images up and larger images down to the
+  views. Images initially open at natural size or scale down to fit. Fit-to-window
+  remains available when a smaller image can be enlarged to fill the preview.
+  Fit-to-window scales smaller images up and larger images down to the
   available preview area, within the 1%-3200% zoom range. Actual size shows the
   image at 100%. Hold Space to pan while using the crop tool. Release a moving
   drag to throw the preview with smoothly decaying momentum. A new pointer

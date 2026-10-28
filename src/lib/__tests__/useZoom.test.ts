@@ -37,7 +37,7 @@ test('fit mode continues to recalculate zoom when image dimensions change', asyn
     scope.stop();
 });
 
-test('opening a new image resets manual zoom to fit capped at 100%, even at the same dimensions', async () => {
+test('opening a new image resets manual zoom to 100% with fit available, even at the same dimensions', async () => {
     const scope = effectScope();
     const imageSize = shallowRef({ width: 800, height: 400 });
     const viewportSize = shallowRef({ width: 1000, height: 700 });
@@ -51,8 +51,31 @@ test('opening a new image resets manual zoom to fit capped at 100%, even at the 
     sourceId.value += 1;
     await nextTick();
 
-    assert.equal(zoomState.isFit.value, true);
+    assert.equal(zoomState.isFit.value, false);
     assert.equal(zoomState.zoom.value, 1);
+    scope.stop();
+});
+
+test('small images open at actual size with explicit fit available', async () => {
+    const scope = effectScope();
+    const imageSize = shallowRef({ width: 400, height: 200 });
+    const viewportSize = shallowRef({ width: 1200, height: 800 });
+    const sourceId = shallowRef(1);
+    const zoomState = scope.run(() => useZoom(imageSize, viewportSize, sourceId));
+    assert.ok(zoomState);
+
+    for (const size of [{ width: 400, height: 200 }, { width: 200, height: 400 }]) {
+        imageSize.value = size;
+        sourceId.value += 1;
+        await nextTick();
+
+        assert.equal(zoomState.zoom.value, 1);
+        assert.equal(zoomState.isFit.value, false);
+
+        zoomState.fitToView();
+        assert.equal(zoomState.zoom.value, Math.min(1200 / size.width, 800 / size.height));
+        assert.equal(zoomState.isFit.value, true);
+    }
     scope.stop();
 });
 
@@ -67,16 +90,45 @@ test('initial fit caps small images at 100% and reduces larger images', async ()
     viewportSize.value = { width: 1200, height: 800 };
     await nextTick();
     assert.equal(zoomState.zoom.value, 1);
+    assert.equal(zoomState.isFit.value, false);
 
     imageSize.value = { width: 200, height: 400 };
     sourceId.value += 1;
     await nextTick();
     assert.equal(zoomState.zoom.value, 1);
+    assert.equal(zoomState.isFit.value, false);
 
     imageSize.value = { width: 1200, height: 1600 };
     sourceId.value += 1;
     await nextTick();
     assert.equal(zoomState.zoom.value, 0.5);
+    assert.equal(zoomState.isFit.value, true);
+    scope.stop();
+});
+
+test('initial fit state follows viewport changes without losing the 100% cap', () => {
+    const scope = effectScope();
+    const imageSize = shallowRef({ width: 400, height: 200 });
+    const viewportSize = shallowRef({ width: 400, height: 200 });
+    const sourceId = shallowRef(1);
+    const zoomState = scope.run(() => useZoom(imageSize, viewportSize, sourceId));
+    assert.ok(zoomState);
+
+    assert.equal(zoomState.zoom.value, 1);
+    assert.equal(zoomState.isFit.value, true);
+
+    viewportSize.value = { width: 1200, height: 800 };
+    assert.equal(zoomState.zoom.value, 1);
+    assert.equal(zoomState.isFit.value, false);
+
+    viewportSize.value = { width: 200, height: 100 };
+    assert.equal(zoomState.zoom.value, 0.5);
+    assert.equal(zoomState.isFit.value, true);
+
+    zoomState.fitToView();
+    viewportSize.value = { width: 1200, height: 800 };
+    assert.equal(zoomState.zoom.value, 3);
+    assert.equal(zoomState.isFit.value, true);
     scope.stop();
 });
 

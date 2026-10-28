@@ -17,7 +17,7 @@ export function useZoom(
     viewportSize: Ref<Size>,
     sourceId: Ref<number>,
 ) {
-    const isFit = ref(true);
+    const fitMode = ref(true);
     const capInitialFit = ref(true);
     const manualZoom = ref(1);
 
@@ -25,14 +25,15 @@ export function useZoom(
         imageSize.value ? fitZoom(imageSize.value, viewportSize.value) : 1,
     );
     const zoom = computed(() => (
-        isFit.value ? (capInitialFit.value ? Math.min(1, fit.value) : fit.value) : manualZoom.value
+        fitMode.value ? (capInitialFit.value ? Math.min(1, fit.value) : fit.value) : manualZoom.value
     ));
+    const isFit = computed(() => fitMode.value && zoom.value === fit.value);
     const canZoomIn = computed(() => imageSize.value !== null && canZoomInFrom(zoom.value));
     const canZoomOut = computed(() => imageSize.value !== null && canZoomOutFrom(zoom.value));
 
     function setZoom(value: number) {
         manualZoom.value = value;
-        isFit.value = false;
+        fitMode.value = false;
     }
 
     function zoomIn() {
@@ -45,7 +46,7 @@ export function useZoom(
 
     function fitToView() {
         capInitialFit.value = false;
-        isFit.value = true;
+        fitMode.value = true;
     }
 
     function actualSize() {
@@ -55,7 +56,7 @@ export function useZoom(
     watch([imageSize, sourceId], ([nextSize, nextSourceId], [previousSize, previousSourceId]) => {
         if (nextSourceId !== previousSourceId || !nextSize || !previousSize) {
             capInitialFit.value = true;
-            isFit.value = true;
+            fitMode.value = true;
         }
     });
 
