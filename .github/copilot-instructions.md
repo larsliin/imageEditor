@@ -69,3 +69,9 @@ When asking for permission or gathering additional information needed for the co
 - Wait for the user's response before proceeding with the git operation
 
 After a commit is successfully created, the next action must be a `vscode_askQuestions` call asking whether to push the commit(s). Do not end the turn with a status-only message or run `git push` before receiving the user's answer. Use predefined yes/no options to make this as simple as possible, and only push after an explicit yes.
+
+If a push to GitHub over HTTPS is blocked because Git is not authenticated:
+- Ask the user to authenticate through Git Credential Manager.
+- Run `git credential-manager github login` in an interactive terminal so the user can complete sign-in. If the agent's terminal cannot open interactive authentication, ask the user to run the command in their own terminal.
+- Wait for authentication to complete before retrying the authorized push. Authentication does not replace the explicit permission required to push.
+- Never ask the user to paste passwords or access tokens into chat or store them in repository files.
