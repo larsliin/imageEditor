@@ -235,6 +235,7 @@
                     :zoom="zoom"
                     :is-fit="isFit"
                     :image-size="imageSize"
+                    :rulers-enabled="rulersEnabled"
                     @fit="fitToView"
                     @actual-size="actualSize"
                 />

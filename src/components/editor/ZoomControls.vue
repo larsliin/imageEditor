@@ -7,6 +7,7 @@
         zoom: number
         isFit: boolean
         imageSize: Size | null
+        rulersEnabled?: boolean
     }>();
 
     const emit = defineEmits<{
@@ -19,7 +20,7 @@
 </script>
 
 <template>
-    <div class="zoom-controls" role="group" aria-label="Zoom">
+    <div class="zoom-controls" :class="{ 'zoom-controls--with-rulers': rulersEnabled }" role="group" aria-label="Zoom">
         <output class="zoom-level" aria-live="polite" :aria-label="`Zoom ${label}`">
             <i class="bi bi-search" aria-hidden="true"></i>
             <span>{{ label }}</span>
@@ -71,6 +72,11 @@
     background-color: color-mix(in srgb, var(--color-panel) 85%, transparent);
     border: 1px solid var(--color-border);
     border-radius: 4px;
+}
+
+/* Clear the 20px vertical ruler while keeping the same 8px gap. */
+.zoom-controls--with-rulers {
+    left: 28px;
 }
 
 .zoom-level {

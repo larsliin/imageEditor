@@ -54,7 +54,8 @@ unpacked Chrome extension to open the editor from the browser toolbar.
   browser and restored when the app opens. Rulers never appear in exported images.
   Crop, resize, and rotate toolbars open below the top ruler when it is visible.
   Fit-to-window accounts for the rulers and preserves a 24px gap between the
-  image and the rulers.
+  image and the rulers. The zoom panel in the bottom-left corner shifts right
+  to clear the vertical ruler.
 - **Rotate** opens a draggable toolbar with clockwise and counterclockwise
   90-degree preview buttons, followed by Apply and Cancel icons. Apply commits
   the rotation as one undoable edit; Cancel, Escape, or switching tools discards
