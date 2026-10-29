@@ -13,6 +13,7 @@
         rename: [fileName: string]
         'toggle-theme': []
         'toggle-rulers': []
+        close: []
     }>();
 
     const isEditing = shallowRef(false);
@@ -98,26 +99,37 @@
                 </dd>
             </div>
         </dl>
+        <div class="controls-group">
+            <button
+                class="rulers-toggle"
+                type="button"
+                aria-label="Pixel rulers"
+                :aria-pressed="rulersEnabled"
+                :title="rulersEnabled ? 'Hide pixel rulers' : 'Show pixel rulers'"
+                :disabled="busy || !image"
+                @click="emit('toggle-rulers')"
+            >
+                <i class="bi bi-rulers" aria-hidden="true"></i>
+            </button>
+            <button
+                class="theme-toggle"
+                type="button"
+                :aria-label="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+                :title="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+                @click="emit('toggle-theme')"
+            >
+                <i :class="isDarkMode ? 'bi bi-sun' : 'bi bi-moon'" aria-hidden="true"></i>
+            </button>
+        </div>
         <button
-            class="rulers-toggle"
+            class="close-button"
             type="button"
-            aria-label="Pixel rulers"
-            :aria-pressed="rulersEnabled"
-            :title="rulersEnabled ? 'Hide pixel rulers' : 'Show pixel rulers'"
-            :disabled="busy || !image"
-            @click="emit('toggle-rulers')"
+            aria-label="Close image"
+            title="Close and unload the current image"
+            :disabled="!image"
+            @click="emit('close')"
         >
-            <i class="bi bi-rulers" aria-hidden="true"></i>
-            <span>px</span>
-        </button>
-        <button
-            class="theme-toggle"
-            type="button"
-            :aria-label="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
-            :title="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
-            @click="emit('toggle-theme')"
-        >
-            <i :class="isDarkMode ? 'bi bi-sun' : 'bi bi-moon'" aria-hidden="true"></i>
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
         </button>
     </header>
 </template>
@@ -205,6 +217,84 @@
 .rulers-toggle:focus-visible {
     outline: 1px solid var(--color-focus);
     outline-offset: 1px;
+}
+
+.controls-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 2px;
+    height: 32px;
+    background-color: var(--color-panel-raised);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    margin-left: auto;
+    margin-right: 12px;
+}
+
+.controls-group .rulers-toggle,
+.controls-group .theme-toggle {
+    display: grid;
+    place-items: center;
+    margin: 0;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+}
+
+.controls-group .theme-toggle:hover:not(:disabled),
+.controls-group .rulers-toggle:hover:not(:disabled) {
+    background-color: var(--color-hover);
+}
+
+.controls-group .theme-toggle:focus-visible,
+.controls-group .rulers-toggle:focus-visible {
+    outline: 1px solid var(--color-focus);
+    outline-offset: -3px;
+}
+
+.controls-group .rulers-toggle[aria-pressed='true'] {
+    background-color: var(--color-active);
+}
+
+.controls-group .rulers-toggle:disabled,
+.controls-group .theme-toggle:disabled {
+    opacity: var(--opacity-button-secondary-disabled);
+    cursor: default;
+}
+
+.close-button {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    margin-right: 12px;
+    border: 1.5px solid var(--color-focus);
+    border-radius: 4px;
+    color: var(--color-text);
+    background-color: var(--color-panel-raised);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.close-button:hover:not(:disabled) {
+    background-color: rgba(29, 158, 117, 0.1);
+}
+
+.close-button:focus-visible {
+    outline: 1px solid var(--color-focus);
+    outline-offset: 1px;
+}
+
+.close-button:disabled {
+    opacity: var(--opacity-button-secondary-disabled);
+    cursor: default;
 }
 
 .document-detail {

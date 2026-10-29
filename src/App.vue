@@ -23,7 +23,7 @@
 
     const {
         bitmap, info, documentId, status, error, isBusy, importImage, exportImage, cropImage, rotateImage,
-        resizeImage, levelsImage, curvesImage, colorModeImage, renameImage, dismissError,
+        resizeImage, levelsImage, curvesImage, colorModeImage, renameImage, dismissError, closeImage,
         canUndo, canRedo, undo, redo, originalFileSize,
     }
         = useImageDocument();
@@ -193,6 +193,7 @@
             @rename="renameImage"
             @toggle-theme="toggleTheme"
             @toggle-rulers="toggleRulers"
+            @close="closeImage"
         />
         <EditorToolRail
             class="editor__tool-rail"

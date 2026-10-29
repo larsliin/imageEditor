@@ -396,6 +396,19 @@ export function useImageDocument() {
         error.value = null;
     }
 
+    function closeImage() {
+        if (!current.value) return;
+        if (isDirty.value && !window.confirm('Discard unsaved changes and close the image?')) return;
+        replaceDocument(null);
+        documentId.value += 1;
+        revision.value = 0;
+        savedRevision.value = 0;
+        savedFileName.value = '';
+        savedExportMimeType.value = 'image/png';
+        nextRevision = 0;
+        error.value = null;
+    }
+
     function warnBeforeUnload(event: BeforeUnloadEvent) {
         if (!isDirty.value) return;
         event.preventDefault();
@@ -435,5 +448,6 @@ export function useImageDocument() {
         setExportMimeType,
         exportImage,
         dismissError,
+        closeImage,
     };
 }
