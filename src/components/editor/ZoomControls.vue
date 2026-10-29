@@ -5,6 +5,7 @@
 
     const props = defineProps<{
         zoom: number
+        displayZoom: number
         isFit: boolean
         imageSize: Size | null
         rulersEnabled?: boolean
@@ -16,7 +17,7 @@
         'actual-size': []
     }>();
 
-    const label = computed(() => formatZoom(props.zoom));
+    const label = computed(() => formatZoom(props.displayZoom));
     const isActualSize = computed(() => props.zoom === 1);
 </script>
 
