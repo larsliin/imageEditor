@@ -16,6 +16,7 @@ export function useExportPreview(
     let generation = 0;
     let running = false;
     let disposed = false;
+    let debounceTimer: number | null = null;
 
     function clearResult() {
         result.value = null;
@@ -67,17 +68,34 @@ export function useExportPreview(
         }
     }
 
-    watch([image, mimeType, () => mimeType.value === 'image/png' ? null : quality.value], () => {
+    function scheduleEncode() {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = window.setTimeout(() => {
+            debounceTimer = null;
+            void encode();
+        }, 300);
+    }
+
+    watch([image, mimeType], () => {
         generation += 1;
         clearResult();
         error.value = null;
         calculating.value = true;
-        void encode();
+        scheduleEncode();
     }, { immediate: true, flush: 'sync' });
+
+    watch(() => mimeType.value === 'image/png' ? null : quality.value, () => {
+        generation += 1;
+        clearResult();
+        error.value = null;
+        calculating.value = true;
+        scheduleEncode();
+    }, { flush: 'sync' });
 
     onScopeDispose(() => {
         disposed = true;
         clearResult();
+        if (debounceTimer) clearTimeout(debounceTimer);
         if (!running) releaseCanvas();
     });
 
