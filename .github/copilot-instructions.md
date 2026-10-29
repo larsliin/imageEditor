@@ -7,6 +7,26 @@ and simple color adjustments. Keep the interface approachable and focused on
 these operations. Do not introduce advanced editing tools, layers, accounts,
 or backend services unless explicitly requested.
 
+## UX and design workflow
+
+- At the start of every new feature, involve
+  [App UX Designer](./agents/app-ux-designer.agent.md) to define the user flow,
+  interface, and acceptance criteria before implementation. For features with
+  no user-facing impact, a brief assessment is sufficient.
+- Also involve App UX Designer before refactoring or redesigning the UX or
+  visual design of an existing feature, including layouts, controls, navigation,
+  and responsive behavior.
+- If App UX Designer is already the active agent, continue there rather than
+  invoking another instance. It owns design decisions and delegates all coding
+  to [Vue 3 Senior Developer](./agents/vue3-senior-developer.agent.md).
+- App UX Designer must never implement code itself, including CSS-only tweaks,
+  prototypes, tests, configuration, or fixes discovered during design review.
+  Hand implementation and every subsequent coding correction to Vue 3 Senior
+  Developer. If that agent cannot be invoked, stop at the design brief and
+  explain the blocker; do not code as a fallback.
+- Keep design-only requests design-only. If the required agent is unavailable,
+  explain the limitation rather than silently skipping the design step.
+
 ## Stack and implementation
 
 - Use Vue 3 single-file components with the Composition API and
