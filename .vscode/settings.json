@@ -5,5 +5,17 @@
     "tsconfig.json": "tsconfig.*.json, env.d.ts, typed-router.d.ts",
     "vite.config.*": "jsconfig*, vitest.config.*, cypress.config.*, playwright.config.*",
     "package.json": "package-lock.json, pnpm*, .yarnrc*, yarn*, .eslint*, eslint*, .oxlint*, oxlint*, .oxfmt*, .prettier*, prettier*, .editorconfig, bun.lock, nub.lock"
-  }
+  },
+  "workbench.colorCustomizations": {
+    "sash.hoverBorder": "#75a574",
+    "statusBar.background": "#5b8c5a",
+    "statusBar.debuggingBackground": "#5b8c5a",
+    "statusBar.debuggingForeground": "#e7e7e7",
+    "statusBar.foreground": "#e7e7e7",
+    "statusBar.inactiveBackground": "#5b8c5a",
+    "statusBarItem.hoverBackground": "#75a574",
+    "statusBarItem.remoteBackground": "#4b4c74",
+    "statusBarItem.remoteForeground": "#e7e7e7"
+  },
+  "peacock.color": "#5B8C5A"
 }
