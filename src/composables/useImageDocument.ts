@@ -4,6 +4,7 @@ import { isCropInsideRotatedImage, isValidAngle, isValidCrop, type CropRect } fr
 import { MAX_RESIZE_DIMENSION, isValidResize } from '@/lib/resize';
 import { isIdentityLevels, isValidLevels, type LevelsParams } from '@/lib/levels';
 import { isIdentityCurves, isValidCurves, type CurvesParams } from '@/lib/curves';
+import { isIdentityBrightnessContrast, isValidBrightnessContrast, type BrightnessContrastParams } from '@/lib/brightnessContrast';
 import type { ColorMode } from '@/lib/colorMode';
 import type { Size } from '@/lib/zoom';
 import type { QuarterTurns } from '@/lib/rotate';
@@ -20,6 +21,8 @@ import {
     levelsImageBitmap,
     curvesImageBitmap,
     colorModeImageBitmap,
+    brightnessContrastImageBitmap,
+    flipImageBitmap,
     resolveExportMimeType,
     rotateImageBitmap,
     rotateCropImageBitmap,
@@ -331,6 +334,53 @@ export function useImageDocument() {
         }
     }
 
+    async function flipImage(horizontal: boolean): Promise<boolean> {
+        const doc = current.value;
+        if (!doc || isBusy.value) return false;
+        status.value = 'processing';
+        error.value = null;
+        try {
+            const flipped = await flipImageBitmap(doc.bitmap, horizontal);
+            if (disposed) {
+                flipped.close();
+                return false;
+            }
+            commitEdit({ ...doc, bitmap: flipped });
+            return true;
+        } catch (e) {
+            error.value = errorMessage(e, 'The image could not be flipped.');
+            return false;
+        } finally {
+            status.value = 'idle';
+        }
+    }
+
+    async function brightnessContrastImage(params: BrightnessContrastParams): Promise<boolean> {
+        const doc = current.value;
+        if (!doc || isBusy.value) return false;
+        if (!isValidBrightnessContrast(params)) {
+            error.value = 'Brightness and contrast must be between -100 and 100.';
+            return false;
+        }
+        if (isIdentityBrightnessContrast(params)) return true;
+        status.value = 'processing';
+        error.value = null;
+        try {
+            const adjusted = await brightnessContrastImageBitmap(doc.bitmap, params);
+            if (disposed) {
+                adjusted.close();
+                return false;
+            }
+            commitEdit({ ...doc, bitmap: adjusted });
+            return true;
+        } catch (e) {
+            error.value = errorMessage(e, 'The brightness/contrast could not be applied.');
+            return false;
+        } finally {
+            status.value = 'idle';
+        }
+    }
+
     function resetImage() {
         const doc = current.value;
         if (!doc || !canReset.value || isBusy.value) return;
@@ -443,6 +493,8 @@ export function useImageDocument() {
         levelsImage,
         curvesImage,
         colorModeImage,
+        flipImage,
+        brightnessContrastImage,
         resetImage,
         renameImage,
         setExportMimeType,

@@ -1,6 +1,7 @@
 import { applyLevelsToPixels, type LevelsParams } from './levels';
 import { applyCurvesToPixels, type CurvesParams } from './curves';
 import { applyColorModeToPixels, type ColorMode } from './colorMode';
+import { applyBrightnessContrastToPixels, type BrightnessContrastParams } from './brightnessContrast';
 import { drawRotatedImage, rotatedSize, type QuarterTurns } from './rotate';
 
 export type ExportMimeType = 'image/png' | 'image/jpeg' | 'image/webp';
@@ -91,6 +92,30 @@ export async function rotateImageBitmap(source: ImageBitmap, turns: QuarterTurns
     return createImageBitmap(canvas);
 }
 
+export async function flipImageBitmap(source: ImageBitmap, horizontal: boolean): Promise<ImageBitmap> {
+    const canvas = document.createElement('canvas');
+    canvas.width = source.width;
+    canvas.height = source.height;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('Canvas 2D rendering is not available in this browser.');
+    }
+    drawFlippedImage(context, source, horizontal);
+    return createImageBitmap(canvas);
+}
+
+export function drawFlippedImage(context: CanvasRenderingContext2D, source: ImageBitmap, horizontal: boolean) {
+    context.save();
+    if (horizontal) {
+        context.scale(-1, 1);
+        context.drawImage(source, -source.width, 0);
+    } else {
+        context.scale(1, -1);
+        context.drawImage(source, 0, -source.height);
+    }
+    context.restore();
+}
+
 export async function cropImageBitmap(
     source: ImageBitmap,
     crop: { x: number; y: number; width: number; height: number },
@@ -178,6 +203,21 @@ export async function colorModeImageBitmap(source: ImageBitmap, mode: ColorMode)
     }
     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
     applyColorModeToPixels(imageData.data, mode);
+    context.putImageData(imageData, 0, 0);
+    return createImageBitmap(canvas);
+}
+
+export async function brightnessContrastImageBitmap(
+    source: ImageBitmap,
+    params: BrightnessContrastParams,
+): Promise<ImageBitmap> {
+    const canvas = renderToCanvas(source);
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('Canvas 2D rendering is not available in this browser.');
+    }
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    applyBrightnessContrastToPixels(imageData.data, params);
     context.putImageData(imageData, 0, 0);
     return createImageBitmap(canvas);
 }

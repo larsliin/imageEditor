@@ -8,7 +8,7 @@
     import RotateControls from './components/editor/RotateControls.vue';
     import { rotatedSize, type QuarterTurns } from './lib/rotate';
     import { useImageDocument } from './composables/useImageDocument';
-    import { useZoom } from './composables/useZoom';
+    import { useAnimatedZoom } from './composables/useAnimatedZoom';
     import type { Size } from './lib/zoom';
     import type { ToolId } from './types/editor';
     import type { CropRect } from './lib/crop';
@@ -17,23 +17,27 @@
     import CurvesControls from './components/editor/CurvesControls.vue';
     import type { CurvesParams } from './lib/curves';
     import ColorModeControls from './components/editor/ColorModeControls.vue';
+    import BrightnessContrastControls from './components/editor/BrightnessContrastControls.vue';
+    import type { BrightnessContrastParams } from './lib/brightnessContrast';
     import ExportDialog from './components/editor/ExportDialog.vue';
     import type { PreparedExport } from './lib/imageIO';
     import type { ColorMode } from './lib/colorMode';
 
     const {
         bitmap, info, documentId, status, error, isBusy, importImage, exportImage, cropImage, rotateImage,
-        resizeImage, levelsImage, curvesImage, colorModeImage, renameImage, dismissError, closeImage,
+        resizeImage, levelsImage, curvesImage, colorModeImage, flipImage, brightnessContrastImage, renameImage, dismissError, closeImage,
         canUndo, canRedo, undo, redo, originalFileSize,
     }
         = useImageDocument();
 
     const viewportSize = ref<Size>({ width: 0, height: 0 });
     const rotationPreview = ref<QuarterTurns>(0);
+    const flipHPreview = ref(false);
+    const flipVPreview = ref(false);
     const imageSize = computed<Size | null>(() =>
         bitmap.value ? rotatedSize(bitmap.value, rotationPreview.value) : null,
     );
-    const { zoom, isFit, canZoomIn, canZoomOut, zoomIn, zoomOut, fitToView, actualSize } = useZoom(
+    const { zoom, targetZoom, isFit, canZoomIn, canZoomOut, zoomIn, zoomOut, fitToView, actualSize } = useAnimatedZoom(
         imageSize,
         viewportSize,
         documentId,
@@ -44,7 +48,8 @@
     const popupOpen = computed(() => exportOpen.value
         || activeTool.value === 'levels'
         || activeTool.value === 'curves'
-        || activeTool.value === 'color-mode');
+        || activeTool.value === 'color-mode'
+        || activeTool.value === 'brightness-contrast');
     const rulersEnabled = shallowRef(false);
     const rulersStorageKey = 'image-editor-rulers';
 
@@ -122,6 +127,13 @@
         if (await rotateImage(turns)) activeTool.value = null;
     }
 
+    async function applyRotationWithFlips(turns: QuarterTurns, flipH: boolean, flipV: boolean) {
+        if (flipH && !(await flipImage(true))) return;
+        if (flipV && !(await flipImage(false))) return;
+        if (turns !== 0 && !(await rotateImage(turns))) return;
+        activeTool.value = null;
+    }
+
     async function applyLevels(levels: LevelsParams) {
         if (await levelsImage(levels)) activeTool.value = null;
     }
@@ -129,6 +141,11 @@
     const levelsPreview = ref<LevelsParams | null>(null);
     const curvesPreview = ref<CurvesParams | null>(null);
     const colorModePreview = ref<ColorMode | null>(null);
+    const brightnessContrastPreview = ref<BrightnessContrastParams | null>(null);
+
+    async function applyBrightnessContrast(params: BrightnessContrastParams) {
+        if (await brightnessContrastImage(params)) activeTool.value = null;
+    }
 
     async function applyCurves(curves: CurvesParams) {
         if (await curvesImage(curves)) activeTool.value = null;
@@ -140,9 +157,12 @@
 
     watch(activeTool, () => {
         rotationPreview.value = 0;
+        flipHPreview.value = false;
+        flipVPreview.value = false;
         levelsPreview.value = null;
         curvesPreview.value = null;
         colorModePreview.value = null;
+        brightnessContrastPreview.value = null;
     });
 
     watch(bitmap, () => {
@@ -228,7 +248,10 @@
             :levels-preview="levelsPreview"
             :curves-preview="curvesPreview"
             :color-mode-preview="colorModePreview"
+            :brightness-contrast-preview="brightnessContrastPreview"
             :rotation-preview="rotationPreview"
+            :flip-h-preview="flipHPreview"
+            :flip-v-preview="flipVPreview"
             @import="importImage"
             @dismiss-error="dismissError"
             @viewport-resize="viewportSize = $event"
@@ -241,6 +264,7 @@
                 <ZoomControls
                     :disabled="popupOpen"
                     :zoom="zoom"
+                    :display-zoom="targetZoom"
                     :is-fit="isFit"
                     :image-size="imageSize"
                     :rulers-enabled="rulersEnabled"
@@ -268,8 +292,12 @@
             v-if="activeTool === 'rotate' && bitmap"
             :disabled="isBusy"
             :error="error"
-            @preview="rotationPreview = $event"
-            @apply="applyRotation"
+            @preview="(turns, flipH, flipV) => {
+                rotationPreview = turns;
+                flipHPreview = flipH;
+                flipVPreview = flipV;
+            }"
+            @apply="applyRotationWithFlips"
             @cancel="activeTool = null"
         />
         <ResizeControls
@@ -304,6 +332,15 @@
             :error="error"
             @preview="colorModePreview = $event"
             @apply="applyColorMode"
+            @cancel="activeTool = null"
+        />
+        <BrightnessContrastControls
+            v-if="activeTool === 'brightness-contrast' && bitmap"
+            :image="bitmap"
+            :disabled="isBusy"
+            :error="error"
+            @preview="brightnessContrastPreview = $event"
+            @apply="applyBrightnessContrast"
             @cancel="activeTool = null"
         />
     </div>
