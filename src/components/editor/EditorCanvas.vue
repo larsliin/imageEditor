@@ -111,11 +111,18 @@
         });
     }
 
-    // Modal dialogs make the viewport inert, so Ctrl+wheel over them would zoom the page instead.
+    // Open dialogs make the viewport inert, so Ctrl+wheel over the dialog or the inert image area
+    // never reaches the viewport's own handler and would zoom the page instead.
     function handleModalWheel(event: WheelEvent) {
         if (!event.ctrlKey || !props.bitmap) return;
-        if (!(event.target instanceof Element) || !event.target.closest('dialog[open]')) return;
-        handleWheel(event);
+        const viewport = viewportRef.value;
+        if (!viewport || !(event.target instanceof Node) || viewport.contains(event.target)) return;
+        const overDialog = event.target instanceof Element && event.target.closest('dialog[open]') !== null;
+        const bounds = viewport.getBoundingClientRect();
+        const overInertViewport = viewport.closest('[inert]') !== null
+            && event.clientX >= bounds.left && event.clientX <= bounds.right
+            && event.clientY >= bounds.top && event.clientY <= bounds.bottom;
+        if (overDialog || overInertViewport) handleWheel(event);
     }
 
     let resizeObserver: ResizeObserver | null = null;
@@ -133,11 +140,41 @@
     onBeforeUnmount(() => {
         resizeObserver?.disconnect();
         window.removeEventListener('wheel', handleModalWheel);
+        if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
     });
 
     // Keep the point at the viewport center stable when zooming.
     let centerRatio: { x: number; y: number } | null = null;
     let pointerAnchor: { clientX: number; clientY: number; imageX: number; imageY: number } | null = null;
+    let previewDebounceTimer: number | null = null;
+    let pendingPreviewData: {
+        bitmap: ImageBitmap
+        canvas: HTMLCanvasElement
+        levels: LevelsParams | null | undefined
+        curves: CurvesParams | null | undefined
+        colorMode: ColorMode | null | undefined
+        rotation: QuarterTurns
+    } | null = null;
+
+    function applyPreview() {
+        if (!pendingPreviewData) return;
+        const { bitmap, canvas, levels, curves, colorMode, rotation } = pendingPreviewData;
+        const size = rotatedSize(bitmap, rotation ?? 0);
+        if (canvas.width !== size.width || canvas.height !== size.height) {
+            canvas.width = size.width;
+            canvas.height = size.height;
+        }
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        if (!context) return;
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        drawRotatedImage(context, bitmap, rotation ?? 0);
+        if (!levels && !curves && !colorMode) return;
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        if (levels) applyLevelsToPixels(imageData.data, levels);
+        if (curves) applyCurvesToPixels(imageData.data, curves);
+        if (colorMode) applyColorModeToPixels(imageData.data, colorMode);
+        context.putImageData(imageData, 0, 0);
+    }
 
     watch(
         () => props.zoom,
@@ -182,21 +219,9 @@
         [() => props.bitmap, canvasRef, () => props.levelsPreview, () => props.curvesPreview, () => props.colorModePreview, () => props.rotationPreview],
         ([bitmap, canvas, levels, curves, colorMode, rotation]) => {
             if (!bitmap || !canvas) return;
-            const size = rotatedSize(bitmap, rotation ?? 0);
-            if (canvas.width !== size.width || canvas.height !== size.height) {
-                canvas.width = size.width;
-                canvas.height = size.height;
-            }
-            const context = canvas.getContext('2d', { willReadFrequently: true });
-            if (!context) return;
-            context.clearRect(0, 0, canvas.width, canvas.height);
-            drawRotatedImage(context, bitmap, rotation ?? 0);
-            if (!levels && !curves && !colorMode) return;
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            if (levels) applyLevelsToPixels(imageData.data, levels);
-            if (curves) applyCurvesToPixels(imageData.data, curves);
-            if (colorMode) applyColorModeToPixels(imageData.data, colorMode);
-            context.putImageData(imageData, 0, 0);
+            pendingPreviewData = { bitmap, canvas, levels, curves, colorMode, rotation: rotation ?? 0 };
+            if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
+            previewDebounceTimer = window.setTimeout(applyPreview, 100);
         },
         { flush: 'post' },
     );
