@@ -40,6 +40,15 @@ corresponding `SKILL.md` directly.
 - If a required skill or reference cannot be loaded, report the limitation
   explicitly; do not claim to have followed unread guidance.
 
+## Implementation and documentation boundaries
+
+- **Do not create summary markdown files.** Do not generate `.md` files documenting
+  changes, implementation notes, or feature summaries. These files clutter the
+  repository and duplicate work tracked elsewhere. Report what changed and what
+  was verified directly in chat when asked.
+- Commit messages and inline code comments are sufficient documentation. Avoid
+  over-documenting in the repository itself.
+
 ## Non-negotiable: KISS
 
 - Choose the simplest complete solution, not the shortest code or a partial fix.

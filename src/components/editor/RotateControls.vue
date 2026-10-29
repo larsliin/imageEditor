@@ -9,12 +9,14 @@
     }>();
 
     const emit = defineEmits<{
-        preview: [turns: QuarterTurns]
-        apply: [turns: QuarterTurns]
+        preview: [turns: QuarterTurns, flipH: boolean, flipV: boolean]
+        apply: [turns: QuarterTurns, flipH: boolean, flipV: boolean]
         cancel: []
     }>();
 
     const turns = shallowRef<QuarterTurns>(0);
+    const flipH = shallowRef(false);
+    const flipV = shallowRef(false);
     const clockwise = useTemplateRef<HTMLButtonElement>('clockwise');
     let previousFocus: HTMLElement | null = null;
 
@@ -33,11 +35,23 @@
         if (props.disabled) return;
         const rotations: readonly QuarterTurns[] = [0, 1, 2, 3];
         turns.value = rotations[(turns.value + direction + 4) % 4]!;
-        emit('preview', turns.value);
+        emit('preview', turns.value, flipH.value, flipV.value);
+    }
+
+    function toggleFlipH() {
+        if (props.disabled) return;
+        flipH.value = !flipH.value;
+        emit('preview', turns.value, flipH.value, flipV.value);
+    }
+
+    function toggleFlipV() {
+        if (props.disabled) return;
+        flipV.value = !flipV.value;
+        emit('preview', turns.value, flipH.value, flipV.value);
     }
 
     function apply() {
-        if (!props.disabled && turns.value !== 0) emit('apply', turns.value);
+        if (!props.disabled && (turns.value !== 0 || flipH.value || flipV.value)) emit('apply', turns.value, flipH.value, flipV.value);
     }
 
     function cancel() {
@@ -50,19 +64,26 @@
         <FloatingToolbar label="Rotate toolbar" @keydown.esc.stop.prevent="cancel">
             <form class="rotate-form" aria-label="Rotate image" :aria-busy="disabled" @submit.prevent="apply">
                 <fieldset class="rotate-controls" :disabled="disabled">
-                    <button ref="clockwise" type="button" class="icon-button rotate-button" aria-label="Rotate clockwise"
+                    <button ref="clockwise" type="button" class="icon-button" aria-label="Rotate clockwise"
                         title="Rotate 90 degrees clockwise" @click="rotate(1)">
                         <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
-                        Clockwise
                     </button>
-                    <button type="button" class="icon-button rotate-button" aria-label="Rotate counterclockwise"
+                    <button type="button" class="icon-button" aria-label="Rotate counterclockwise"
                         title="Rotate 90 degrees counterclockwise" @click="rotate(-1)">
                         <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-                        Counterclockwise
+                    </button>
+                    <span class="rotate-divider" role="separator" aria-orientation="vertical"></span>
+                    <button type="button" class="icon-button" :class="{ active: flipH }" aria-label="Flip horizontally"
+                        title="Flip image horizontally (mirror left-right)" @click="toggleFlipH">
+                        <i class="bi bi-symmetry-horizontal" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="icon-button" :class="{ active: flipV }" aria-label="Flip vertically"
+                        title="Flip image vertically (mirror top-bottom)" @click="toggleFlipV">
+                        <i class="bi bi-symmetry-vertical" aria-hidden="true"></i>
                     </button>
                     <span class="rotate-divider" role="separator" aria-orientation="vertical"></span>
                     <button type="submit" class="icon-button icon-button--apply" aria-label="Apply rotation"
-                        title="Apply rotation" :disabled="turns === 0">
+                        title="Apply rotation" :disabled="turns === 0 && !flipH && !flipV">
                         <i class="bi bi-check-lg" aria-hidden="true"></i>
                     </button>
                     <button type="button" class="icon-button" aria-label="Cancel rotation" title="Cancel rotation" @click="cancel">
@@ -109,25 +130,22 @@
     cursor: pointer;
 }
 
+.icon-button.active {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #fff;
+}
+
 .icon-button--apply {
     color: #fff;
     background: var(--color-accent);
-}
-
-.rotate-button {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    width: auto;
-    padding: 4px 8px;
-    font-size: 12px;
 }
 
 .icon-button:hover:not(:disabled) {
     filter: brightness(1.15);
 }
 
-.icon-button:not(.icon-button--apply):hover:not(:disabled) {
+.icon-button:not(.icon-button--apply):not(.active):hover:not(:disabled) {
     background: var(--color-button-secondary-hover);
     border-color: var(--color-button-secondary-border-hover);
     filter: none;

@@ -8,7 +8,9 @@
     import { applyLevelsToPixels, type LevelsParams } from '@/lib/levels';
     import { applyCurvesToPixels, type CurvesParams } from '@/lib/curves';
     import { applyColorModeToPixels, type ColorMode } from '@/lib/colorMode';
+    import { applyBrightnessContrastToPixels, type BrightnessContrastParams } from '@/lib/brightnessContrast';
     import { drawRotatedImage, rotatedSize, type QuarterTurns } from '@/lib/rotate';
+    import { drawFlippedImage } from '@/lib/imageIO';
 
     const props = defineProps<{
         bitmap: ImageBitmap | null
@@ -22,7 +24,10 @@
         levelsPreview?: LevelsParams | null
         curvesPreview?: CurvesParams | null
         colorModePreview?: ColorMode | null
+        brightnessContrastPreview?: BrightnessContrastParams | null
         rotationPreview?: QuarterTurns
+        flipHPreview?: boolean
+        flipVPreview?: boolean
     }>();
 
     const emit = defineEmits<{
@@ -153,12 +158,15 @@
         levels: LevelsParams | null | undefined
         curves: CurvesParams | null | undefined
         colorMode: ColorMode | null | undefined
+        brightnessContrast: BrightnessContrastParams | null | undefined
         rotation: QuarterTurns
+        flipH: boolean
+        flipV: boolean
     } | null = null;
 
     function applyPreview() {
         if (!pendingPreviewData) return;
-        const { bitmap, canvas, levels, curves, colorMode, rotation } = pendingPreviewData;
+        const { bitmap, canvas, levels, curves, colorMode, brightnessContrast, rotation, flipH, flipV } = pendingPreviewData;
         const size = rotatedSize(bitmap, rotation ?? 0);
         if (canvas.width !== size.width || canvas.height !== size.height) {
             canvas.width = size.width;
@@ -167,12 +175,25 @@
         const context = canvas.getContext('2d', { willReadFrequently: true });
         if (!context) return;
         context.clearRect(0, 0, canvas.width, canvas.height);
-        drawRotatedImage(context, bitmap, rotation ?? 0);
-        if (!levels && !curves && !colorMode) return;
+        
+        // Draw image with flips and rotation applied
+        context.save();
+        context.translate(size.width / 2, size.height / 2);
+        context.rotate(rotation * Math.PI / 2);
+        
+        // Apply flips within the rotated coordinate system
+        if (flipH) context.scale(-1, 1);
+        if (flipV) context.scale(1, -1);
+        
+        context.drawImage(bitmap, -bitmap.width / 2, -bitmap.height / 2);
+        context.restore();
+        
+        if (!levels && !curves && !colorMode && !brightnessContrast) return;
         const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
         if (levels) applyLevelsToPixels(imageData.data, levels);
         if (curves) applyCurvesToPixels(imageData.data, curves);
         if (colorMode) applyColorModeToPixels(imageData.data, colorMode);
+        if (brightnessContrast) applyBrightnessContrastToPixels(imageData.data, brightnessContrast);
         context.putImageData(imageData, 0, 0);
     }
 
@@ -216,14 +237,23 @@
     );
 
     watch(
-        [() => props.bitmap, canvasRef, () => props.levelsPreview, () => props.curvesPreview, () => props.colorModePreview, () => props.rotationPreview],
-        ([bitmap, canvas, levels, curves, colorMode, rotation]) => {
+        [() => props.bitmap, canvasRef, () => props.levelsPreview, () => props.curvesPreview, () => props.colorModePreview, () => props.brightnessContrastPreview, () => props.rotationPreview, () => props.flipHPreview, () => props.flipVPreview],
+        ([bitmap, canvas, levels, curves, colorMode, brightnessContrast, rotation, flipH, flipV]) => {
             if (!bitmap || !canvas) return;
-            pendingPreviewData = { bitmap, canvas, levels, curves, colorMode, rotation: rotation ?? 0 };
+            const newSize = rotatedSize(bitmap, rotation ?? 0);
+            const dimensionsChanged = canvas.width !== newSize.width || canvas.height !== newSize.height;
+            
+            pendingPreviewData = { bitmap, canvas, levels, curves, colorMode, brightnessContrast, rotation: rotation ?? 0, flipH: flipH ?? false, flipV: flipV ?? false };
             if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
-            previewDebounceTimer = window.setTimeout(applyPreview, 100);
+            
+            // Apply immediately for dimension changes to prevent stretching, but debounce color adjustments
+            if (dimensionsChanged) {
+                applyPreview();
+            } else {
+                previewDebounceTimer = window.setTimeout(applyPreview, 100);
+            }
         },
-        { flush: 'post' },
+        { flush: 'pre' },
     );
 </script>
 
