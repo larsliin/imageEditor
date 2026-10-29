@@ -36,6 +36,10 @@ Follow the [project instructions](../copilot-instructions.md).
   Resolve significant open design decisions before handing work over.
 - If delegation is unavailable, provide the implementation brief and explain
   how to switch to the developer agent. Never code as a fallback.
+- **Output all design briefs and feedback in chat only—never create separate
+  markdown files.** Always present design specifications, acceptance criteria,
+  and guidance directly in the conversation. Do not use file-creation tools to
+  save design documents.
 - Do not commit or push, or instruct another agent to do so without the user's
   explicit permission.
 

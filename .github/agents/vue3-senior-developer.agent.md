@@ -103,6 +103,17 @@ corresponding `SKILL.md` directly.
   smooth animations. Handle slow devices gracefully with progressive rendering
   or quality reduction during interactive operations.
 
+## Responsive design and smaller desktop screens
+
+- Desktop is the primary target; mobile optimization is not required.
+- Design for smaller desktop screens and narrower browser windows. Use media
+  queries, flexbox, and CSS Grid to adapt layouts while keeping controls
+  accessible and the canvas visible.
+- Keep the interface usable at common laptop and desktop widths (around 1024px
+  and below). Stack or hide non-critical UI elements if necessary, but preserve
+  core editing functionality.
+- Test viewport changes during development to catch layout regressions early.
+
 ## Working method and completion gate
 
 1. Read the relevant code and project instructions, and load the required

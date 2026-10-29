@@ -64,6 +64,18 @@ or backend services unless explicitly requested.
 - Disable image-dependent actions until an image is ready, and communicate
   loading or processing states.
 
+## Responsive design
+
+- Optimize for desktop screens as the primary target. Mobile device optimization
+  is not a priority.
+- Ensure the interface remains usable on smaller desktop screens (including
+  laptop displays and narrower browser windows). Use media queries, layout
+  adjustments, and component resizing where appropriate to maintain functionality
+  and readability.
+- Test the interface at various desktop viewport widths to confirm that controls
+  remain accessible and the preview canvas scales appropriately without breaking
+  the user experience.
+
 ## Validation
 
 - Run `npm run build` after code changes; it includes TypeScript checking and
