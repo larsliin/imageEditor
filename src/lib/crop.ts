@@ -86,6 +86,42 @@ export function largestCropInsideRotatedImage(image: Size, angleDegrees: number)
     }
 }
 
+export function constrainCropInsideRotatedImage(crop: CropRect, image: Size, angleDegrees: number, snapToPixel = false): CropRect {
+    if (isCropInsideRotatedImage(crop, image, angleDegrees)) return { ...crop };
+    const radians = angleDegrees * Math.PI / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    const centerX = image.width / 2;
+    const centerY = image.height / 2;
+    let scale = 1;
+    for (const x of [crop.x, crop.x + crop.width]) {
+        for (const y of [crop.y, crop.y + crop.height]) {
+            const dx = x - centerX;
+            const dy = y - centerY;
+            const sourceX = Math.abs(dx * cos + dy * sin);
+            const sourceY = Math.abs(-dx * sin + dy * cos);
+            if (sourceX > centerX) scale = Math.min(scale, centerX / sourceX);
+            if (sourceY > centerY) scale = Math.min(scale, centerY / sourceY);
+        }
+    }
+    const constrained = {
+        x: centerX + (crop.x - centerX) * scale,
+        y: centerY + (crop.y - centerY) * scale,
+        width: crop.width * scale,
+        height: crop.height * scale,
+    };
+    if (!snapToPixel) return constrained;
+    const x = Math.ceil(constrained.x);
+    const y = Math.ceil(constrained.y);
+    const snapped = {
+        x,
+        y,
+        width: Math.floor(constrained.x + constrained.width) - x,
+        height: Math.floor(constrained.y + constrained.height) - y,
+    };
+    return isValidCrop(snapped, image) ? snapped : constrained;
+}
+
 export function previewToImagePoint(
     point: Point,
     preview: { left: number; top: number; width: number; height: number },

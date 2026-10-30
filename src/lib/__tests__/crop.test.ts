@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, snapCropToPixels, isValidCrop, previewToImagePoint, type CropHandle, largestCropInsideRotatedImage, isCropInsideRotatedImage } from '../crop.ts';
+import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, snapCropToPixels, isValidCrop, previewToImagePoint, type CropHandle, largestCropInsideRotatedImage, isCropInsideRotatedImage, constrainCropInsideRotatedImage } from '../crop.ts';
 
 test('pixel snapping keeps tiny selections non-empty and inside image bounds', () => {
     const image = { width: 800, height: 600 };
@@ -185,6 +185,28 @@ test('Shift corner resizing creates squares anchored to the opposite corner', ()
     for (const handle of ['n', 'e', 's', 'w'] as const) {
         assert.deepEqual(resizeCrop(crop, handle, { x: 20, y: 30 }, image, true),
             resizeCrop(crop, handle, { x: 20, y: 30 }, image));
+    }
+});
+
+test('straighten constrains edge selections without enlarging or changing their aspect ratio', () => {
+    for (const image of [{ width: 800, height: 600 }, { width: 600, height: 800 }]) {
+        for (const x of [0, image.width - 200]) {
+            for (const y of [0, image.height - 100]) {
+                const crop = { x, y, width: 200, height: 100 };
+                for (const angle of [-45, -15, -0.1, 0, 0.1, 15, 45]) {
+                    for (const snap of [false, true]) {
+                        const constrained = constrainCropInsideRotatedImage(crop, image, angle, snap);
+                        assert.equal(isValidCrop(constrained, image), true);
+                        assert.equal(isCropInsideRotatedImage(constrained, image, angle), true);
+                        assert.ok(constrained.width <= crop.width && constrained.height <= crop.height);
+                        if (snap) assert.ok(Object.values(constrained).every(Number.isInteger));
+                        else assert.ok(Math.abs(constrained.width / constrained.height - 2) < 1e-10);
+                        if (angle === 0) assert.deepEqual(constrained, crop);
+                    }
+                }
+                assert.deepEqual(crop, { x, y, width: 200, height: 100 });
+            }
+        }
     }
 });
 

@@ -8,7 +8,6 @@ export interface LevelsParams {
 export const DEFAULT_LEVELS: Readonly<LevelsParams> = { black: 0, gamma: 1, white: 255 };
 export const MIN_GAMMA = 0.1;
 export const MAX_GAMMA = 9.99;
-export const LEVELS_MAX_VALUE = 255;
 
 export function isIdentityLevels(levels: LevelsParams): boolean {
     return levels.black === DEFAULT_LEVELS.black
@@ -20,7 +19,7 @@ export function isValidLevels(levels: LevelsParams): boolean {
     return Number.isInteger(levels.black)
         && Number.isInteger(levels.white)
         && levels.black >= 0
-        && levels.white <= LEVELS_MAX_VALUE
+        && levels.white <= DEFAULT_LEVELS.white
         && levels.black < levels.white
         && Number.isFinite(levels.gamma)
         && levels.gamma >= MIN_GAMMA
@@ -38,6 +37,7 @@ export function midpointFromGamma(levels: LevelsParams): number {
 
 export function gammaFromMidpoint(midpoint: number, black: number, white: number): number {
     const ratio = (midpoint - black) / (white - black);
+    // Clamp to avoid log(0) or log(1), which would be -∞ or 0
     const clamped = Math.min(1 - 1e-6, Math.max(1e-6, ratio));
     return clampGamma(Math.round(Math.log(clamped) / Math.log(0.5) * 100) / 100);
 }

@@ -2,7 +2,6 @@
     import { computed, onMounted, ref, useId, useTemplateRef, watch } from 'vue';
     import {
         DEFAULT_LEVELS,
-        LEVELS_MAX_VALUE,
         MAX_GAMMA,
         MIN_GAMMA,
         clampGamma,
@@ -44,7 +43,7 @@
     const unchanged = computed(() => valid.value && isIdentityLevels(levels.value));
     const midpoint = computed(() => (valid.value ? midpointFromGamma(levels.value) : 127.5));
 
-    const percent = (value: number) => `${(Math.min(255, Math.max(0, value)) / LEVELS_MAX_VALUE) * 100}%`;
+    const percent = (value: number) => `${(Math.min(255, Math.max(0, value)) / DEFAULT_LEVELS.white) * 100}%`;
 
     onMounted(() => {
         try {
@@ -84,7 +83,7 @@
     function valueFromPointer(event: PointerEvent): number {
         const rect = track.value?.getBoundingClientRect();
         if (!rect || rect.width === 0) return 0;
-        return Math.round(Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)) * LEVELS_MAX_VALUE);
+        return Math.round(Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)) * DEFAULT_LEVELS.white);
     }
 
     function setBlack(value: number) {
@@ -92,7 +91,7 @@
     }
 
     function setWhite(value: number) {
-        levels.value.white = Math.max(Math.min(LEVELS_MAX_VALUE, Math.round(value)), levels.value.black + 1);
+        levels.value.white = Math.max(Math.min(DEFAULT_LEVELS.white, Math.round(value)), levels.value.black + 1);
     }
 
     function setMidpoint(value: number) {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue';
-    import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, snapCropToPixels, isValidCrop, previewToImagePoint, isCropInsideRotatedImage, isValidAngle, largestCropInsideRotatedImage, type CropRect, type CropHandle, type Point } from '@/lib/crop';
+    import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, snapCropToPixels, isValidCrop, previewToImagePoint, isCropInsideRotatedImage, isValidAngle, largestCropInsideRotatedImage, constrainCropInsideRotatedImage, type CropRect, type CropHandle, type Point } from '@/lib/crop';
     import type { Size } from '@/lib/zoom';
     import CropControls from '../controls/CropControls.vue';
 
@@ -30,6 +30,7 @@
     watch(snapToPixel, (value) => {
         if (value && isValidCrop(crop.value, props.image)) {
             crop.value = snapCropToPixels(crop.value, props.image);
+            manualCrop = null;
         }
         try {
             localStorage.setItem(snapPreferenceKey, String(value));
@@ -93,6 +94,7 @@
 
     // Automatic crops follow the current angle until the user adjusts the selection.
     let autoCrop = true;
+    let manualCrop: CropRect | null = null;
 
     watch(angle, (value) => {
         if (!isValidAngle(value)) return;
@@ -100,9 +102,9 @@
             crop.value = largestCropInsideRotatedImage(props.image, value);
             return;
         }
-        if (rectValid.value && !isCropInsideRotatedImage(crop.value, props.image, value)) {
-            autoCrop = true;
-            crop.value = largestCropInsideRotatedImage(props.image, value);
+        if (rectValid.value) {
+            manualCrop ??= { ...crop.value };
+            crop.value = constrainCropInsideRotatedImage(manualCrop, props.image, value, snapToPixel.value);
         }
     });
     // Keep showing the last valid selection (and grid) while a field is empty or invalid.
@@ -134,6 +136,7 @@
         if (props.disabled || props.panMode || pointerId !== null || event.button !== 0 || !surface.value) return;
         event.preventDefault();
         autoCrop = false;
+        manualCrop = null;
         surface.value.focus({ preventScroll: true });
         surface.value.setPointerCapture(event.pointerId);
         pointerId = event.pointerId;
@@ -195,6 +198,7 @@
         event.stopPropagation();
         if (props.disabled || props.panMode || dragging.value) return;
         autoCrop = false;
+        manualCrop = null;
         crop.value = resizeCrop(crop.value, handle, {
             x: event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0,
             y: event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0,
@@ -203,7 +207,10 @@
 
     function onFormInput(event: Event) {
         const label = (event.target as HTMLElement).getAttribute('aria-label') ?? '';
-        if (label.startsWith('Crop ')) autoCrop = false;
+        if (label.startsWith('Crop ')) {
+            autoCrop = false;
+            manualCrop = null;
+        }
     }
 
     function apply() {
