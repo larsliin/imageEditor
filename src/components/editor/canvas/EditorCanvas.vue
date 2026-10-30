@@ -100,6 +100,8 @@
         const surface = imageSurfaceRef.value;
         const bounds = surface?.getBoundingClientRect();
         if (bounds && bounds.width > 0 && bounds.height > 0) {
+            // Capture the mouse position as a ratio of the image surface,
+            // so we can keep it stable during zoom animation.
             pointerAnchor = {
                 clientX: event.clientX,
                 clientY: event.clientY,
@@ -108,12 +110,8 @@
             };
         }
 
-        const previousZoom = props.zoom;
         if (event.deltaY < 0) emit('zoom-in');
         else emit('zoom-out');
-        void nextTick(() => {
-            if (props.zoom === previousZoom) pointerAnchor = null;
-        });
     }
 
     // Open dialogs make the viewport inert, so Ctrl+wheel over the dialog or the inert image area
@@ -148,8 +146,9 @@
         if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
     });
 
-    // Keep the point at the viewport center stable when zooming.
+    // Keep the point at the viewport center stable when zooming without pointer anchor.
     let centerRatio: { x: number; y: number } | null = null;
+    // Stores mouse position for pointer-anchored zoom (Ctrl+wheel). Kept alive during animation.
     let pointerAnchor: { clientX: number; clientY: number; imageX: number; imageY: number } | null = null;
     let previewDebounceTimer: number | null = null;
     let pendingPreviewData: {
@@ -225,7 +224,7 @@
                     viewport.scrollLeft += surfaceBounds.left + pointerAnchor.imageX * surfaceBounds.width - pointerAnchor.clientX;
                     viewport.scrollTop += surfaceBounds.top + pointerAnchor.imageY * surfaceBounds.height - pointerAnchor.clientY;
                 }
-                pointerAnchor = null;
+                // pointerAnchor will be replaced by the next wheel event
                 return;
             }
             if (!centerRatio) return;
