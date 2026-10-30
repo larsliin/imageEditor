@@ -376,7 +376,7 @@
 .filename-input {
     field-sizing: content;
     width: auto;
-    min-width: 1.5rem;
+    min-width: .5rem;
     max-width: min(18rem, 40vw);
     height: 18px;
     padding: 0;

@@ -39,18 +39,6 @@
                         />
                         <output>{{ settings.thickness }} px</output>
                     </label>
-                    <label class="brush-control">
-                        <span>Hardness</span>
-                        <BaseRangeInput
-                            :model-value="settings.hardness"
-                            aria-label="Brush hardness percentage"
-                            min="0"
-                            max="100"
-                            step="1"
-                            @update:model-value="updateSetting('hardness', $event ?? settings.hardness)"
-                        />
-                        <output>{{ settings.hardness }}%</output>
-                    </label>
                     <label class="brush-control brush-control--color">
                         <span>Color</span>
                         <input

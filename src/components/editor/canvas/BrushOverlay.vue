@@ -23,59 +23,54 @@
     }
 
     const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
+    const committedCanvas = useTemplateRef<HTMLCanvasElement>('committed');
+    const MIN_POINT_SPACING = 2;
     const cursor = shallowRef<{ x: number; y: number; diameter: number } | null>(null);
-    // Committed strokes are rasterized once per change, not on every pointer move.
-    const committedLayer = document.createElement('canvas');
-    let committedValid = false;
+    const magnified = shallowRef(false);
+    // Both layers are image-resolution and scaled by CSS like the preview canvas, so zooming never
+    // re-rasterizes strokes and the preview uses the same pixels as export.
+    let drawnStrokes: readonly BrushStroke[] = [];
     let activeStroke: DraftStroke | null = null;
     let axisLock: AxisLock | null = null;
     let lastPointer: BrushPoint | null = null;
+    // Minimum distance between recorded points, in image pixels (2 screen pixels).
+    let pointSpacing = 1;
     let frame = 0;
     let resizeObserver: ResizeObserver | null = null;
 
-    function redraw() {
+    function fitToImage(element: HTMLCanvasElement) {
+        if (element.width === props.image.width && element.height === props.image.height) return false;
+        element.width = props.image.width;
+        element.height = props.image.height;
+        return true;
+    }
+
+    function drawActive() {
         cancelAnimationFrame(frame);
         frame = 0;
         const element = canvas.value;
         const context = element?.getContext('2d');
-        const layer = committedLayer.getContext('2d');
-        if (!element || !context || !layer || props.image.width <= 0 || props.image.height <= 0) return;
-
-        const bounds = element.getBoundingClientRect();
-        if (bounds.width <= 0 || bounds.height <= 0) return;
-        const pixelRatio = window.devicePixelRatio || 1;
-        const width = Math.max(1, Math.round(bounds.width * pixelRatio));
-        const height = Math.max(1, Math.round(bounds.height * pixelRatio));
-        if (element.width !== width || element.height !== height) {
-            element.width = width;
-            element.height = height;
-            committedLayer.width = width;
-            committedLayer.height = height;
-            committedValid = false;
-        }
-
-        const scale = bounds.width / props.image.width;
-        if (!committedValid) {
-            layer.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-            layer.clearRect(0, 0, bounds.width, bounds.height);
-            for (const stroke of props.strokes) drawBrushStroke(layer, stroke, scale);
-            committedValid = true;
-        }
-
-        context.setTransform(1, 0, 0, 1, 0, 0);
-        context.clearRect(0, 0, width, height);
-        context.drawImage(committedLayer, 0, 0);
-        context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-        if (activeStroke) drawBrushStroke(context, activeStroke, scale);
+        if (!element || !context) return;
+        if (!fitToImage(element)) context.clearRect(0, 0, element.width, element.height);
+        if (activeStroke) drawBrushStroke(context, activeStroke);
     }
 
     function scheduleRedraw() {
-        if (!frame) frame = requestAnimationFrame(redraw);
+        if (!frame) frame = requestAnimationFrame(drawActive);
     }
 
-    function invalidateCommitted() {
-        committedValid = false;
-        redraw();
+    function drawCommitted() {
+        const element = committedCanvas.value;
+        const context = element?.getContext('2d');
+        if (!element || !context) return;
+        const resized = fitToImage(element);
+        // Adding a stroke only rasterizes the new one; undo or a new image repaints the layer.
+        const appended = !resized
+            && props.strokes.length >= drawnStrokes.length
+            && drawnStrokes.every((stroke, index) => props.strokes[index] === stroke);
+        if (!appended) context.clearRect(0, 0, element.width, element.height);
+        for (const stroke of props.strokes.slice(appended ? drawnStrokes.length : 0)) drawBrushStroke(context, stroke);
+        drawnStrokes = props.strokes;
     }
 
     function imagePoint(event: PointerEvent): { point: BrushPoint; bounds: DOMRect } | null {
@@ -100,35 +95,37 @@
     function setAxisLock(locked: boolean) {
         if (!activeStroke || locked === Boolean(axisLock)) return;
         // Starting from the last painted point keeps the stroke continuous; releasing
-        // leaves the constrained end point in place and freehand resumes from it.
+        // resumes freehand from the last constrained point.
         axisLock = locked ? { start: activeStroke.points.length, axis: null } : null;
     }
 
-    function extendStroke(point: BrushPoint) {
+    function extendStroke(point: BrushPoint, force = false) {
         if (!activeStroke) return;
         const points = activeStroke.points;
-        if (!axisLock) {
-            const previous = points.at(-1);
-            if (previous && previous.x === point.x && previous.y === point.y) return;
-            points.push(point);
-        } else {
+        let next = point;
+        if (axisLock) {
             const anchor = points[axisLock.start - 1];
             if (!anchor) return;
             const dx = point.x - anchor.x;
             const dy = point.y - anchor.y;
             if (!axisLock.axis && (dx !== 0 || dy !== 0)) axisLock.axis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y';
             if (!axisLock.axis) return;
-            // A locked segment is a single line from the anchor, replaced as the pointer moves.
-            points.length = axisLock.start;
-            points.push(axisLock.axis === 'x' ? { x: point.x, y: anchor.y } : { x: anchor.x, y: point.y });
+            // Locked points are painted like freehand ones, just projected onto the axis, so moving
+            // back along the line keeps what was already painted.
+            next = axisLock.axis === 'x' ? { x: point.x, y: anchor.y } : { x: anchor.x, y: point.y };
         }
+        const previous = points.at(-1);
+        const distance = previous ? Math.hypot(next.x - previous.x, next.y - previous.y) : Infinity;
+        // Skipping tiny moves keeps whole-pixel pointer jitter from becoming stair steps.
+        if (distance === 0 || (!force && distance <= pointSpacing)) return;
+        points.push(next);
         scheduleRedraw();
     }
 
     function onKey(event: KeyboardEvent) {
         if (event.key !== 'Shift' || event.repeat) return;
         setAxisLock(event.type === 'keydown');
-        if (lastPointer) extendStroke(lastPointer);
+        if (lastPointer) extendStroke(lastPointer, true);
     }
 
     function startStroke(event: PointerEvent) {
@@ -140,11 +137,12 @@
         element.setPointerCapture(event.pointerId);
         activeStroke = { ...props.settings, points: [mapped.point] };
         lastPointer = mapped.point;
+        pointSpacing = MIN_POINT_SPACING * props.image.width / mapped.bounds.width;
         setAxisLock(event.shiftKey);
         window.addEventListener('keydown', onKey);
         window.addEventListener('keyup', onKey);
         updateCursor(event);
-        redraw();
+        drawActive();
     }
 
     function moveStroke(event: PointerEvent) {
@@ -161,13 +159,16 @@
     function finishStroke() {
         window.removeEventListener('keydown', onKey);
         window.removeEventListener('keyup', onKey);
+        // Keep the true end point that point spacing may have skipped.
+        if (lastPointer) extendStroke(lastPointer, true);
         axisLock = null;
         lastPointer = null;
         if (!activeStroke) return;
         const stroke = activeStroke;
         activeStroke = null;
+        // The parent appends the stroke synchronously, and the committed layer is drawn before paint.
         emit('stroke', stroke);
-        redraw();
+        drawActive();
     }
 
     function endStroke(event: PointerEvent) {
@@ -182,11 +183,15 @@
 
     onMounted(() => {
         const element = canvas.value;
-        if (!element?.parentElement) return;
-        resizeObserver = new ResizeObserver(redraw);
-        resizeObserver.observe(element.parentElement);
+        if (!element) return;
+        // Only toggles pixelated scaling to match the preview; it never redraws strokes.
+        resizeObserver = new ResizeObserver(() => {
+            magnified.value = element.clientWidth > props.image.width;
+        });
+        resizeObserver.observe(element);
         window.addEventListener('blur', finishStroke);
-        redraw();
+        drawCommitted();
+        drawActive();
     });
 
     onBeforeUnmount(() => {
@@ -195,16 +200,18 @@
         window.removeEventListener('blur', finishStroke);
         window.removeEventListener('keydown', onKey);
         window.removeEventListener('keyup', onKey);
-        committedLayer.width = 0;
-        committedLayer.height = 0;
     });
 
-    watch(() => [props.image, props.strokes], invalidateCommitted);
+    watch(() => [props.image, props.strokes], () => {
+        drawCommitted();
+        drawActive();
+    });
 </script>
 
 <template>
     <Teleport defer to=".image-surface">
-        <div class="brush-overlay">
+        <div class="brush-overlay" :class="{ 'is-magnified': magnified }">
+            <canvas ref="committed" class="brush-overlay__canvas" aria-hidden="true"></canvas>
             <canvas
                 ref="canvas"
                 class="brush-overlay__canvas"
@@ -242,10 +249,16 @@
 }
 
 .brush-overlay__canvas {
+    position: absolute;
+    inset: 0;
     display: block;
     width: 100%;
     height: 100%;
     touch-action: none;
+}
+
+.brush-overlay.is-magnified .brush-overlay__canvas {
+    image-rendering: pixelated;
 }
 
 .brush-overlay__cursor {
