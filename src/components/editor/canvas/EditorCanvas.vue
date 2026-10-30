@@ -97,17 +97,20 @@
         event.preventDefault();
         if (event.deltaY === 0) return;
 
+        const viewport = viewportRef.value;
         const surface = imageSurfaceRef.value;
         const bounds = surface?.getBoundingClientRect();
-        if (bounds && bounds.width > 0 && bounds.height > 0) {
+        if (bounds && bounds.width > 0 && bounds.height > 0 && viewport && (viewport.scrollWidth > viewport.clientWidth || viewport.scrollHeight > viewport.clientHeight)) {
             // Capture the mouse position as a ratio of the image surface,
-            // so we can keep it stable during zoom animation.
+            // so we can keep it stable during zoom animation. Only set anchor if viewport is scrollable.
             pointerAnchor = {
                 clientX: event.clientX,
                 clientY: event.clientY,
                 imageX: (event.clientX - bounds.left) / bounds.width,
                 imageY: (event.clientY - bounds.top) / bounds.height,
             };
+        } else {
+            pointerAnchor = null;
         }
 
         if (event.deltaY < 0) emit('zoom-in');
@@ -218,7 +221,9 @@
         () => {
             const viewport = viewportRef.value;
             if (!viewport) return;
-            if (pointerAnchor) {
+            // Only use pointer anchor if viewport is currently scrollable (image is zoomed past fit-to-window)
+            const isScrollable = viewport.scrollWidth > viewport.clientWidth || viewport.scrollHeight > viewport.clientHeight;
+            if (pointerAnchor && isScrollable) {
                 const surfaceBounds = imageSurfaceRef.value?.getBoundingClientRect();
                 if (surfaceBounds) {
                     viewport.scrollLeft += surfaceBounds.left + pointerAnchor.imageX * surfaceBounds.width - pointerAnchor.clientX;
@@ -226,6 +231,10 @@
                 }
                 // pointerAnchor will be replaced by the next wheel event
                 return;
+            }
+            // Clear anchor if viewport is no longer scrollable (zoomed back to fit-to-window)
+            if (!isScrollable) {
+                pointerAnchor = null;
             }
             if (!centerRatio) return;
             viewport.scrollLeft = centerRatio.x * viewport.scrollWidth - viewport.clientWidth / 2;
