@@ -1,6 +1,6 @@
 import { computed, onScopeDispose, readonly, shallowRef, watch, type Ref } from 'vue';
 import type { ToolId } from '@/types/editor';
-import { DEFAULT_BRUSH_SETTINGS, type BrushSettings, type BrushStroke } from '@/lib/brush';
+import { DEFAULT_BRUSH_SETTINGS, isValidBrushSettings, type BrushSettings, type BrushStroke } from '@/lib/brush';
 
 /* eslint-disable no-unused-vars */
 interface BrushOptions {
@@ -11,9 +11,26 @@ interface BrushOptions {
 }
 /* eslint-enable no-unused-vars */
 
+const settingsStorageKey = 'image-editor-brush';
+
+function restoreSettings(): BrushSettings {
+    try {
+        const saved = localStorage.getItem(settingsStorageKey);
+        if (saved === null) return { ...DEFAULT_BRUSH_SETTINGS };
+        const parsed: unknown = JSON.parse(saved);
+        const candidate = { ...DEFAULT_BRUSH_SETTINGS, ...(typeof parsed === 'object' ? parsed : {}) };
+        const settings: BrushSettings = { thickness: candidate.thickness, color: candidate.color };
+        if (isValidBrushSettings(settings)) return settings;
+        console.warn('Ignoring invalid saved brush settings:', saved);
+    } catch (error) {
+        console.warn('Unable to restore the saved brush settings:', error);
+    }
+    return { ...DEFAULT_BRUSH_SETTINGS };
+}
+
 // Pending strokes live only while the Brush tool is active; leaving the tool discards them.
 export function useBrushTools(options: BrushOptions) {
-    const settings = shallowRef<BrushSettings>({ ...DEFAULT_BRUSH_SETTINGS });
+    const settings = shallowRef<BrushSettings>(restoreSettings());
     const strokes = shallowRef<BrushStroke[]>([]);
     const hasPending = computed(() => strokes.value.length > 0);
 
@@ -23,6 +40,11 @@ export function useBrushTools(options: BrushOptions) {
 
     function updateSettings(value: BrushSettings) {
         settings.value = value;
+        try {
+            localStorage.setItem(settingsStorageKey, JSON.stringify(value));
+        } catch (error) {
+            console.warn('Unable to save the brush settings:', error);
+        }
     }
 
     function addStroke(stroke: BrushStroke) {

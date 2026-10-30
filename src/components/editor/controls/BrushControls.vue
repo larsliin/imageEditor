@@ -1,8 +1,9 @@
 <script setup lang="ts">
     import FloatingToolbar from '../chrome/FloatingToolbar.vue';
     import BaseButton from '@/components/bascomponents/BaseButton.vue';
+    import BaseNumberInput from '@/components/bascomponents/BaseNumberInput.vue';
     import BaseRangeInput from '@/components/bascomponents/BaseRangeInput.vue';
-    import type { BrushSettings } from '@/lib/brush';
+    import { isValidBrushSettings, type BrushSettings } from '@/lib/brush';
 
     const props = defineProps<{
         settings: BrushSettings
@@ -18,7 +19,17 @@
     }>();
 
     function updateSetting<K extends keyof BrushSettings>(key: K, value: BrushSettings[K]) {
-        emit('update:settings', { ...props.settings, [key]: value });
+        const settings = { ...props.settings, [key]: value };
+        if (isValidBrushSettings(settings)) emit('update:settings', settings);
+    }
+
+    function commitThickness(event: FocusEvent) {
+        if (!(event.target instanceof HTMLInputElement)) return;
+        const input = event.target;
+        const value = input.valueAsNumber;
+        const thickness = Number.isFinite(value) ? Math.min(500, Math.max(1, Math.round(value))) : props.settings.thickness;
+        updateSetting('thickness', thickness);
+        input.value = String(thickness);
     }
 </script>
 
@@ -27,18 +38,34 @@
         <FloatingToolbar label="Brush toolbar">
             <form class="brush-controls" aria-label="Brush controls" :aria-busy="disabled" @submit.prevent="emit('apply')">
                 <fieldset class="brush-controls__fields" :disabled="disabled">
-                    <label class="brush-control">
-                        <span>Thickness</span>
-                        <BaseRangeInput
-                            :model-value="settings.thickness"
-                            aria-label="Brush thickness in pixels"
-                            min="1"
-                            max="500"
-                            step="1"
-                            @update:model-value="updateSetting('thickness', $event ?? settings.thickness)"
-                        />
-                        <output>{{ settings.thickness }} px</output>
-                    </label>
+                    <div class="brush-control">
+                        <label class="brush-control__slider">
+                            <span>Thickness</span>
+                            <BaseRangeInput
+                                :model-value="settings.thickness"
+                                aria-label="Brush thickness slider"
+                                min="1"
+                                max="500"
+                                step="1"
+                                @update:model-value="updateSetting('thickness', $event ?? settings.thickness)"
+                            />
+                        </label>
+                        <label class="brush-control__number">
+                            <BaseNumberInput
+                                class="brush-control__thickness"
+                                :value="settings.thickness"
+                                aria-label="Brush thickness in pixels"
+                                min="1"
+                                max="500"
+                                step="1"
+                                required
+                                @input="updateSetting('thickness', ($event.target as HTMLInputElement).valueAsNumber)"
+                                @blur="commitThickness"
+                            />
+                            px
+                        </label>
+                    </div>
+                    <span class="brush-controls__divider" role="separator" aria-orientation="vertical"></span>
                     <label class="brush-control brush-control--color">
                         <span>Color</span>
                         <input
@@ -92,11 +119,40 @@
 .brush-control {
     display: grid;
     flex: 0 0 auto;
-    grid-template-columns: auto 120px auto;
+    grid-template-columns: auto auto;
     align-items: center;
     gap: 6px;
     color: var(--color-text);
     font-size: 12px;
+}
+
+.brush-control__slider {
+    display: grid;
+    grid-template-columns: auto 120px;
+    align-items: center;
+    gap: 6px;
+}
+
+.brush-control__number {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.brush-control__thickness {
+    width: 78px;
+    height: 30px;
+    padding: 4px 8px;
+    color: var(--color-text);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 3px;
+    font: inherit;
+}
+
+.brush-control__thickness:focus-visible {
+    outline: 1px solid var(--color-focus);
+    outline-offset: 0;
 }
 
 .brush-control output {
@@ -170,8 +226,12 @@
 }
 
 @media (max-width: 1400px) {
-    .brush-control {
-        grid-template-columns: auto 80px auto;
+    .brush-control__slider {
+        grid-template-columns: auto 80px;
+    }
+
+    .brush-control__thickness {
+        width: 60px;
     }
 
     .brush-control--color {
