@@ -24,7 +24,7 @@
 
 <template>
     <Teleport defer to="#editor-tool-controls">
-        <FloatingToolbar label="Brush toolbar" @keydown.esc.stop.prevent="emit('cancel')">
+        <FloatingToolbar label="Brush toolbar">
             <form class="brush-controls" aria-label="Brush controls" :aria-busy="disabled" @submit.prevent="emit('apply')">
                 <fieldset class="brush-controls__fields" :disabled="disabled">
                     <label class="brush-control">

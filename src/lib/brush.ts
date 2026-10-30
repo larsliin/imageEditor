@@ -19,7 +19,7 @@ export const DEFAULT_BRUSH_SETTINGS: BrushSettings = {
     color: '#000000',
 };
 
-export function isValidBrushSettings(settings: BrushSettings): boolean {
+function isValidBrushSettings(settings: BrushSettings): boolean {
     return Number.isFinite(settings.thickness)
         && settings.thickness >= 1
         && settings.thickness <= 500

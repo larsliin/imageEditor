@@ -1,8 +1,6 @@
-import { onScopeDispose, watch, type Ref } from 'vue';
+import { computed, onScopeDispose, readonly, shallowRef, watch, type Ref } from 'vue';
 import type { ToolId } from '@/types/editor';
-import type { BrushStroke } from '@/lib/brush';
-import { useBrushSession } from './useBrushSession';
-import type { PendingEditAction } from './usePendingEdits';
+import { DEFAULT_BRUSH_SETTINGS, type BrushSettings, type BrushStroke } from '@/lib/brush';
 
 /* eslint-disable no-unused-vars */
 interface BrushOptions {
@@ -10,64 +8,62 @@ interface BrushOptions {
     bitmap: Readonly<Ref<ImageBitmap | null>>
     isBusy: Readonly<Ref<boolean>>
     brushImage: (strokes: readonly BrushStroke[]) => Promise<boolean>
-    performAction: (action: PendingEditAction) => Promise<void>
 }
 /* eslint-enable no-unused-vars */
 
+// Pending strokes live only while the Brush tool is active; leaving the tool discards them.
 export function useBrushTools(options: BrushOptions) {
-    const brushSession = useBrushSession();
+    const settings = shallowRef<BrushSettings>({ ...DEFAULT_BRUSH_SETTINGS });
+    const strokes = shallowRef<BrushStroke[]>([]);
+    const hasPending = computed(() => strokes.value.length > 0);
 
-    function finish() {
-        options.activeTool.value = null;
+    function clear() {
+        strokes.value = [];
     }
 
-    function requestAction(action: PendingEditAction) {
-        if (options.isBusy.value) return;
-        void brushSession.requestAction(action, options.performAction);
+    function updateSettings(value: BrushSettings) {
+        settings.value = value;
     }
 
-    function apply() {
-        if (options.isBusy.value) return;
-        void brushSession.applyAndContinue(options.brushImage, options.performAction, finish);
+    function addStroke(stroke: BrushStroke) {
+        strokes.value = [...strokes.value, stroke];
     }
 
-    function discard() {
-        if (options.isBusy.value) return;
-        void brushSession.discardAndContinue(options.performAction, finish);
+    function undoStroke() {
+        strokes.value = strokes.value.slice(0, -1);
+    }
+
+    async function apply() {
+        if (options.isBusy.value || !hasPending.value) return;
+        if (await options.brushImage(strokes.value)) options.activeTool.value = null;
     }
 
     function cancel() {
         if (options.isBusy.value) return;
-        brushSession.reset();
-        finish();
-    }
-
-    function keepEditing() {
-        brushSession.keepEditing();
+        options.activeTool.value = null;
     }
 
     function onKeydown(event: KeyboardEvent) {
-        if (event.key !== 'Escape' || event.isComposing || options.activeTool.value !== 'brush'
-            || options.isBusy.value || brushSession.promptOpen.value) return;
+        if (event.key !== 'Escape' || event.isComposing || options.activeTool.value !== 'brush') return;
         event.preventDefault();
         cancel();
     }
 
-    watch(options.bitmap, brushSession.reset);
-    watch(options.activeTool, (tool, previous) => {
-        if (previous === 'brush' && tool !== 'brush') brushSession.reset();
+    watch(options.bitmap, clear);
+    watch(options.activeTool, (tool) => {
+        if (tool !== 'brush') clear();
     });
     window.addEventListener('keydown', onKeydown);
     onScopeDispose(() => window.removeEventListener('keydown', onKeydown));
 
     return {
-        brushSession,
-        hasPending: brushSession.hasPending,
-        promptOpen: brushSession.promptOpen,
-        requestAction,
+        settings: readonly(settings),
+        strokes: readonly(strokes),
+        hasPending,
+        updateSettings,
+        addStroke,
+        undoStroke,
         apply,
-        discard,
         cancel,
-        keepEditing,
     };
 }
