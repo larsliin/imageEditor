@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { EDIT_TOOLS, PAINT_TOOLS, PAN_TOOL, type ToolId } from '@/types/editor';
+    import { ADJUSTMENT_TOOLS, PAINT_TOOLS, PAN_TOOL, TRANSFORM_TOOLS, type ToolId } from '@/types/editor';
     import CurvesIcon from '@/components/editor/icons/CurvesIcon.vue';
     import PanIcon from '@/components/editor/icons/PanIcon.vue';
     import BaseButton from '@/components/bascomponents/BaseButton.vue';
@@ -18,13 +18,21 @@
         'zoom-in': []
         'zoom-out': []
     }>();
+
+    const TOOL_GROUPS = [
+        { label: 'Transform tools', tools: TRANSFORM_TOOLS },
+        { label: 'Paint tools', tools: PAINT_TOOLS },
+        { label: 'Adjustment tools', tools: ADJUSTMENT_TOOLS },
+    ] as const;
 </script>
 
 <template>
     <div class="tool-groups" :class="`tool-groups--${layout}`">
-        <div class="tool-group tool-group--edit" role="group" aria-label="Edit tools">
-            <template v-for="tool in EDIT_TOOLS" :key="tool.id">
+        <template v-for="group in TOOL_GROUPS" :key="group.label">
+            <div class="tool-group" role="group" :aria-label="group.label">
                 <BaseButton
+                    v-for="tool in group.tools"
+                    :key="tool.id"
                     variant="tool"
                     :class="{ 'is-active': activeTool === tool.id }"
                     :aria-pressed="activeTool === tool.id"
@@ -36,29 +44,10 @@
                     <CurvesIcon v-if="tool.id === 'curves'" />
                     <i v-else class="bi" :class="tool.icon" aria-hidden="true"></i>
                 </BaseButton>
-                <hr v-if="tool.id === 'rotate'" class="separator" />
-            </template>
-        </div>
+            </div>
 
-        <hr class="separator" />
-
-        <div class="tool-group tool-group--paint" role="group" aria-label="Paint tools">
-            <template v-for="tool in PAINT_TOOLS" :key="tool.id">
-                <BaseButton
-                    variant="tool"
-                    :class="{ 'is-active': activeTool === tool.id }"
-                    :aria-pressed="activeTool === tool.id"
-                    :aria-label="tool.label"
-                    :title="tool.label"
-                    :disabled="!hasImage || busy"
-                    @click="emit('select-tool', tool.id)"
-                >
-                    <i class="bi" :class="tool.icon" aria-hidden="true"></i>
-                </BaseButton>
-            </template>
-        </div>
-
-        <hr class="separator" />
+            <hr class="separator" />
+        </template>
 
         <div class="tool-group" role="group" aria-label="View tools">
             <BaseButton

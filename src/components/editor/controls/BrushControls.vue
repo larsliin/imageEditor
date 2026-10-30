@@ -1,4 +1,5 @@
 <script setup lang="ts">
+    import { nextTick, onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
     import FloatingToolbar from '../chrome/FloatingToolbar.vue';
     import BaseButton from '@/components/bascomponents/BaseButton.vue';
     import BaseNumberInput from '@/components/bascomponents/BaseNumberInput.vue';
@@ -17,6 +18,21 @@
         apply: []
         cancel: []
     }>();
+
+    const thicknessSlider = useTemplateRef<InstanceType<typeof BaseRangeInput>>('thicknessSlider');
+    let previousFocus: HTMLElement | null = null;
+
+    // Moving focus off the tool button keeps Enter from toggling the tool closed; only a focused Apply submits.
+    onMounted(() => {
+        previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        thicknessSlider.value?.focus();
+    });
+
+    onBeforeUnmount(() => {
+        void nextTick(() => {
+            if (previousFocus?.isConnected) previousFocus.focus();
+        });
+    });
 
     function updateSetting<K extends keyof BrushSettings>(key: K, value: BrushSettings[K]) {
         const settings = { ...props.settings, [key]: value };
@@ -42,6 +58,7 @@
                         <label class="brush-control__slider">
                             <span>Thickness</span>
                             <BaseRangeInput
+                                ref="thicknessSlider"
                                 :model-value="settings.thickness"
                                 aria-label="Brush thickness slider"
                                 min="1"
@@ -61,6 +78,7 @@
                                 required
                                 @input="updateSetting('thickness', ($event.target as HTMLInputElement).valueAsNumber)"
                                 @blur="commitThickness"
+                                @keydown.enter.prevent
                             />
                             px
                         </label>
