@@ -18,17 +18,22 @@
     import type { CurvesParams } from './lib/curves';
     import ColorModeControls from './components/editor/controls/ColorModeControls.vue';
     import BrightnessContrastControls from './components/editor/controls/BrightnessContrastControls.vue';
+    import BrushControls from './components/editor/controls/BrushControls.vue';
+    import BrushOverlay from './components/editor/canvas/BrushOverlay.vue';
     import type { BrightnessContrastParams } from './lib/brightnessContrast';
     import ExportDialog from './components/editor/dialogs/ExportDialog.vue';
+    import BrushPendingDialog from './components/editor/dialogs/BrushPendingDialog.vue';
     import type { PreparedExport } from './lib/imageIO';
     import type { ColorMode } from './lib/colorMode';
+    import { useBrushTools } from './composables/useBrushTools';
+    import type { PendingEditAction } from './composables/usePendingEdits';
 
     const {
         bitmap, info, documentId, status, error, isBusy, importImage, exportImage, cropImage, rotateImage,
-        resizeImage, levelsImage, curvesImage, colorModeImage, flipImage, brightnessContrastImage, renameImage, dismissError, closeImage,
+        resizeImage, levelsImage, curvesImage, colorModeImage, flipImage, brightnessContrastImage, brushImage,
+        renameImage, dismissError, closeImage: closeImageNow,
         canUndo, canRedo, undo, redo, originalFileSize,
-    }
-        = useImageDocument();
+    } = useImageDocument();
 
     const viewportSize = ref<Size>({ width: 0, height: 0 });
     const rotationPreview = ref<QuarterTurns>(0);
@@ -45,6 +50,10 @@
 
     const activeTool = ref<ToolId | null>(null);
     const exportOpen = ref(false);
+    const { brushSession, hasPending: hasPendingPaint, promptOpen: paintPromptOpen,
+            requestAction: requestPaintAction, apply: applyPaint, discard: discardPaint, cancel: cancelPaint, keepEditing,
+    } = useBrushTools({ activeTool, bitmap, isBusy, brushImage, performAction: performPaintAction });
+    const { settings: brushSettings, strokes: brushStrokes } = brushSession;
     const popupOpen = computed(() => exportOpen.value
         || activeTool.value === 'levels'
         || activeTool.value === 'curves'
@@ -73,11 +82,55 @@
         }
     }
 
-    function openExport() {
+    function openExportImmediately() {
         if (!bitmap.value || isBusy.value) return;
         activeTool.value = null;
         dismissError();
         exportOpen.value = true;
+    }
+
+    async function performPaintAction(action: PendingEditAction) {
+        switch (action.type) {
+        case 'select-tool':
+            activeTool.value = action.tool;
+            break;
+        case 'import':
+            await importImage(action.file);
+            break;
+        case 'export':
+            openExportImmediately();
+            break;
+        case 'close':
+            closeImageNow();
+            break;
+        }
+    }
+
+    function selectTool(tool: ToolId) {
+        if (isBusy.value) return;
+        requestPaintAction({ type: 'select-tool', tool: activeTool.value === tool ? null : tool });
+    }
+
+    function openExport() {
+        requestPaintAction({ type: 'export' });
+    }
+
+    function requestImport(file?: File) {
+        requestPaintAction({ type: 'import', file });
+    }
+
+    function requestClose() {
+        requestPaintAction({ type: 'close' });
+    }
+
+    const addBrushStroke = brushSession.addStroke;
+
+    function undoDocumentEdit() {
+        if (!hasPendingPaint.value) undo();
+    }
+
+    function redoDocumentEdit() {
+        if (!hasPendingPaint.value) redo();
     }
 
     async function downloadExport(prepared: PreparedExport) {
@@ -108,11 +161,6 @@
         } catch (error) {
             console.warn('Unable to save the theme preference:', error);
         }
-    }
-
-    function selectTool(tool: ToolId) {
-        if (isBusy.value) return;
-        activeTool.value = activeTool.value === tool ? null : tool;
     }
 
     async function applyCrop(crop: CropRect, angle: number) {
@@ -190,15 +238,27 @@
             if (canZoomOut.value) zoomOut();
         } else if (key === 'z' && !event.shiftKey) {
             event.preventDefault();
-            if (!popupOpen.value && canUndo.value) undo();
+            if (!popupOpen.value && !hasPendingPaint.value && canUndo.value) undoDocumentEdit();
         } else if (key === 'y' || (key === 'z' && event.shiftKey)) {
             event.preventDefault();
-            if (!popupOpen.value && canRedo.value) redo();
+            if (!popupOpen.value && !hasPendingPaint.value && canRedo.value) redoDocumentEdit();
         }
     }
 
-    onMounted(() => window.addEventListener('keydown', handleEditorShortcut));
-    onBeforeUnmount(() => window.removeEventListener('keydown', handleEditorShortcut));
+    function warnBeforeUnloadForPaint(event: BeforeUnloadEvent) {
+        if (!hasPendingPaint.value) return;
+        event.preventDefault();
+        event.returnValue = '';
+    }
+
+    onMounted(() => {
+        window.addEventListener('keydown', handleEditorShortcut);
+        window.addEventListener('beforeunload', warnBeforeUnloadForPaint);
+    });
+    onBeforeUnmount(() => {
+        window.removeEventListener('keydown', handleEditorShortcut);
+        window.removeEventListener('beforeunload', warnBeforeUnloadForPaint);
+    });
 </script>
 
 <template>
@@ -213,7 +273,7 @@
             @rename="renameImage"
             @toggle-theme="toggleTheme"
             @toggle-rulers="toggleRulers"
-            @close="closeImage"
+            @close="requestClose"
         />
         <EditorToolRail
             class="editor__tool-rail"
@@ -223,15 +283,15 @@
             :popup-open="popupOpen"
             :can-zoom-in="canZoomIn"
             :can-zoom-out="canZoomOut"
-            :can-undo="canUndo"
-            :can-redo="canRedo"
+            :can-undo="canUndo && !hasPendingPaint"
+            :can-redo="canRedo && !hasPendingPaint"
             @select-tool="selectTool"
-            @import="importImage"
+            @import="requestImport"
             @export="openExport"
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
-            @undo="undo"
-            @redo="redo"
+            @undo="undoDocumentEdit"
+            @redo="redoDocumentEdit"
         />
         <EditorCanvas
             :key="documentId"
@@ -252,7 +312,7 @@
             :rotation-preview="rotationPreview"
             :flip-h-preview="flipHPreview"
             :flip-v-preview="flipVPreview"
-            @import="importImage"
+            @import="requestImport"
             @dismiss-error="dismissError"
             @viewport-resize="viewportSize = $event"
             @zoom-in="zoomIn"
@@ -274,6 +334,13 @@
                 />
             </template>
         </EditorCanvas>
+        <BrushOverlay
+            v-if="activeTool === 'brush' && bitmap"
+            :image="bitmap"
+            :settings="brushSettings"
+            :strokes="brushStrokes"
+            @stroke="addBrushStroke"
+        />
         <div
             id="editor-tool-controls"
             class="floating-tool-controls"
@@ -344,6 +411,21 @@
             @apply="applyBrightnessContrast"
             @cancel="activeTool = null"
         />
+        <BrushControls
+            v-if="activeTool === 'brush' && bitmap"
+            :settings="brushSettings"
+            :disabled="isBusy"
+            :can-apply="hasPendingPaint"
+            :error="error"
+            @update:settings="brushSession.updateSettings"
+            @apply="applyPaint"
+            @cancel="cancelPaint"
+        />
+        <BrushPendingDialog
+            v-if="paintPromptOpen"
+            :busy="isBusy" :error="error"
+            @apply="applyPaint" @discard="discardPaint" @keep="keepEditing"
+        />
     </div>
 </template>
 
@@ -388,4 +470,5 @@
 .floating-tool-controls--with-rulers {
     top: 80px;
 }
+
 </style>

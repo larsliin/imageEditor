@@ -6,6 +6,7 @@ import { isIdentityLevels, isValidLevels, type LevelsParams } from '@/lib/levels
 import { isIdentityCurves, isValidCurves, type CurvesParams } from '@/lib/curves';
 import { isIdentityBrightnessContrast, isValidBrightnessContrast, type BrightnessContrastParams } from '@/lib/brightnessContrast';
 import type { ColorMode } from '@/lib/colorMode';
+import { isValidBrushStrokes, type BrushStroke } from '@/lib/brush';
 import type { Size } from '@/lib/zoom';
 import type { QuarterTurns } from '@/lib/rotate';
 import {
@@ -22,6 +23,7 @@ import {
     curvesImageBitmap,
     colorModeImageBitmap,
     brightnessContrastImageBitmap,
+    brushImageBitmap,
     flipImageBitmap,
     resolveExportMimeType,
     rotateImageBitmap,
@@ -113,6 +115,25 @@ export function useImageDocument() {
             if (!retained.has(previous)) previous.close();
         }
         error.value = null;
+    }
+
+    async function applyBitmapEdit(doc: LoadedDocument, edited: Promise<ImageBitmap>, fallback: string): Promise<boolean> {
+        status.value = 'processing';
+        error.value = null;
+        try {
+            const bitmap = await edited;
+            if (disposed) {
+                bitmap.close();
+                return false;
+            }
+            commitEdit({ ...doc, bitmap });
+            return true;
+        } catch (e) {
+            error.value = errorMessage(e, fallback);
+            return false;
+        } finally {
+            status.value = 'idle';
+        }
     }
 
     function undo() {
@@ -214,22 +235,7 @@ export function useImageDocument() {
         const doc = current.value;
         if (!doc || isBusy.value) return false;
         if (turns === 0) return true;
-        status.value = 'processing';
-        error.value = null;
-        try {
-            const rotated = await rotateImageBitmap(doc.bitmap, turns);
-            if (disposed) {
-                rotated.close();
-                return false;
-            }
-            commitEdit({ ...doc, bitmap: rotated });
-            return true;
-        } catch (e) {
-            error.value = errorMessage(e, 'The image could not be rotated.');
-            return false;
-        } finally {
-            status.value = 'idle';
-        }
+        return applyBitmapEdit(doc, rotateImageBitmap(doc.bitmap, turns), 'The image could not be rotated.');
     }
 
     async function resizeImage(size: Size): Promise<boolean> {
@@ -266,22 +272,7 @@ export function useImageDocument() {
             return false;
         }
         if (isIdentityLevels(levels)) return true;
-        status.value = 'processing';
-        error.value = null;
-        try {
-            const adjusted = await levelsImageBitmap(doc.bitmap, levels);
-            if (disposed) {
-                adjusted.close();
-                return false;
-            }
-            commitEdit({ ...doc, bitmap: adjusted });
-            return true;
-        } catch (e) {
-            error.value = errorMessage(e, 'The levels could not be applied.');
-            return false;
-        } finally {
-            status.value = 'idle';
-        }
+        return applyBitmapEdit(doc, levelsImageBitmap(doc.bitmap, levels), 'The levels could not be applied.');
     }
 
     async function curvesImage(curves: CurvesParams): Promise<boolean> {
@@ -292,67 +283,19 @@ export function useImageDocument() {
             return false;
         }
         if (isIdentityCurves(curves)) return true;
-        status.value = 'processing';
-        error.value = null;
-        try {
-            const adjusted = await curvesImageBitmap(doc.bitmap, curves);
-            if (disposed) {
-                adjusted.close();
-                return false;
-            }
-            commitEdit({ ...doc, bitmap: adjusted });
-            return true;
-        } catch (e) {
-            error.value = errorMessage(e, 'The curves could not be applied.');
-            return false;
-        } finally {
-            status.value = 'idle';
-        }
+        return applyBitmapEdit(doc, curvesImageBitmap(doc.bitmap, curves), 'The curves could not be applied.');
     }
 
     async function colorModeImage(mode: ColorMode): Promise<boolean> {
         const doc = current.value;
         if (!doc || isBusy.value) return false;
-        status.value = 'processing';
-        error.value = null;
-        try {
-            const converted = await colorModeImageBitmap(doc.bitmap, mode);
-            if (disposed) {
-                converted.close();
-                return false;
-            }
-            commitEdit({
-                ...doc,
-                bitmap: converted,
-            });
-            return true;
-        } catch (e) {
-            error.value = errorMessage(e, 'The color mode could not be changed.');
-            return false;
-        } finally {
-            status.value = 'idle';
-        }
+        return applyBitmapEdit(doc, colorModeImageBitmap(doc.bitmap, mode), 'The color mode could not be changed.');
     }
 
     async function flipImage(horizontal: boolean): Promise<boolean> {
         const doc = current.value;
         if (!doc || isBusy.value) return false;
-        status.value = 'processing';
-        error.value = null;
-        try {
-            const flipped = await flipImageBitmap(doc.bitmap, horizontal);
-            if (disposed) {
-                flipped.close();
-                return false;
-            }
-            commitEdit({ ...doc, bitmap: flipped });
-            return true;
-        } catch (e) {
-            error.value = errorMessage(e, 'The image could not be flipped.');
-            return false;
-        } finally {
-            status.value = 'idle';
-        }
+        return applyBitmapEdit(doc, flipImageBitmap(doc.bitmap, horizontal), 'The image could not be flipped.');
     }
 
     async function brightnessContrastImage(params: BrightnessContrastParams): Promise<boolean> {
@@ -363,22 +306,25 @@ export function useImageDocument() {
             return false;
         }
         if (isIdentityBrightnessContrast(params)) return true;
-        status.value = 'processing';
-        error.value = null;
-        try {
-            const adjusted = await brightnessContrastImageBitmap(doc.bitmap, params);
-            if (disposed) {
-                adjusted.close();
-                return false;
-            }
-            commitEdit({ ...doc, bitmap: adjusted });
-            return true;
-        } catch (e) {
-            error.value = errorMessage(e, 'The brightness/contrast could not be applied.');
+        return applyBitmapEdit(
+            doc,
+            brightnessContrastImageBitmap(doc.bitmap, params),
+            'The brightness/contrast could not be applied.',
+        );
+    }
+
+    async function brushImage(strokes: readonly BrushStroke[]): Promise<boolean> {
+        const doc = current.value;
+        if (!doc || isBusy.value) return false;
+        if (!isValidBrushStrokes(strokes, doc.bitmap.width, doc.bitmap.height)) {
+            error.value = 'The brush strokes are invalid or outside the image bounds.';
             return false;
-        } finally {
-            status.value = 'idle';
         }
+        return applyBitmapEdit(
+            doc,
+            brushImageBitmap(doc.bitmap, strokes),
+            'The brush strokes could not be applied.',
+        );
     }
 
     function resetImage() {
@@ -495,6 +441,7 @@ export function useImageDocument() {
         colorModeImage,
         flipImage,
         brightnessContrastImage,
+        brushImage,
         resetImage,
         renameImage,
         setExportMimeType,

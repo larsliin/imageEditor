@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { EDIT_TOOLS, PAN_TOOL, type ToolId } from '@/types/editor';
+    import { EDIT_TOOLS, PAINT_TOOLS, PAN_TOOL, type ToolId } from '@/types/editor';
     import CurvesIcon from '@/components/editor/icons/CurvesIcon.vue';
     import PanIcon from '@/components/editor/icons/PanIcon.vue';
     import BaseButton from '@/components/bascomponents/BaseButton.vue';
@@ -37,6 +37,24 @@
                     <i v-else class="bi" :class="tool.icon" aria-hidden="true"></i>
                 </BaseButton>
                 <hr v-if="tool.id === 'rotate'" class="separator" />
+            </template>
+        </div>
+
+        <hr class="separator" />
+
+        <div class="tool-group tool-group--paint" role="group" aria-label="Paint tools">
+            <template v-for="tool in PAINT_TOOLS" :key="tool.id">
+                <BaseButton
+                    variant="tool"
+                    :class="{ 'is-active': activeTool === tool.id }"
+                    :aria-pressed="activeTool === tool.id"
+                    :aria-label="tool.label"
+                    :title="tool.label"
+                    :disabled="!hasImage || busy"
+                    @click="emit('select-tool', tool.id)"
+                >
+                    <i class="bi" :class="tool.icon" aria-hidden="true"></i>
+                </BaseButton>
             </template>
         </div>
 

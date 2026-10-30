@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { computed, shallowRef, useTemplateRef, watch } from 'vue';
-    import { PAN_TOOL, EDIT_TOOLS, type ToolId } from '@/types/editor';
+    import { PAN_TOOL, EDIT_TOOLS, PAINT_TOOLS, type ToolId } from '@/types/editor';
     import { useOverflowCollapse } from '@/composables/useOverflowCollapse';
     import EditorToolGroups from './EditorToolGroups.vue';
     import EditorToolFoldout from './EditorToolFoldout.vue';
@@ -29,7 +29,11 @@
         redo: []
     }>();
 
-    const FOLDOUT_TOOL_IDS: readonly ToolId[] = [...EDIT_TOOLS.map((tool) => tool.id), PAN_TOOL.id];
+    const FOLDOUT_TOOL_IDS: readonly ToolId[] = [
+        ...EDIT_TOOLS.map((tool) => tool.id),
+        ...PAINT_TOOLS.map((tool) => tool.id),
+        PAN_TOOL.id,
+    ];
 
     const rail = useTemplateRef<HTMLElement>('rail');
     const { collapsed } = useOverflowCollapse(rail);

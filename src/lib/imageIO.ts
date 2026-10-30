@@ -3,6 +3,7 @@ import { applyCurvesToPixels, type CurvesParams } from './curves';
 import { applyColorModeToPixels, type ColorMode } from './colorMode';
 import { applyBrightnessContrastToPixels, type BrightnessContrastParams } from './brightnessContrast';
 import { drawRotatedImage, rotatedSize, type QuarterTurns } from './rotate';
+import { drawBrushStroke, isValidBrushStrokes, type BrushStroke } from './brush';
 
 export type ExportMimeType = 'image/png' | 'image/jpeg' | 'image/webp';
 
@@ -219,6 +220,19 @@ export async function brightnessContrastImageBitmap(
     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
     applyBrightnessContrastToPixels(imageData.data, params);
     context.putImageData(imageData, 0, 0);
+    return createImageBitmap(canvas);
+}
+
+export async function brushImageBitmap(source: ImageBitmap, strokes: readonly BrushStroke[]): Promise<ImageBitmap> {
+    if (!isValidBrushStrokes(strokes, source.width, source.height)) {
+        throw new Error('The brush strokes are invalid or outside the image bounds.');
+    }
+    const canvas = renderToCanvas(source);
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('Canvas 2D rendering is not available in this browser.');
+    }
+    for (const stroke of strokes) drawBrushStroke(context, stroke);
     return createImageBitmap(canvas);
 }
 
