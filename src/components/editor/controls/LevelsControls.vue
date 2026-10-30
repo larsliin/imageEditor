@@ -13,7 +13,10 @@
         midpointFromGamma,
         type LevelsParams,
     } from '@/lib/levels';
-    import ToolModal from './ToolModal.vue';
+    import ToolModal from '../dialogs/ToolModal.vue';
+    import BaseButton from '@/components/bascomponents/BaseButton.vue';
+    import BaseNumberInput from '@/components/bascomponents/BaseNumberInput.vue';
+    import BaseCheckbox from '@/components/bascomponents/BaseCheckbox.vue';
 
     const HISTOGRAM_SAMPLE_SIZE = 256;
 
@@ -218,17 +221,17 @@
             <div class="fields">
                 <label class="field" :for="`${idPrefix}-black`">
                     Shadows
-                    <input :id="`${idPrefix}-black`" v-model.number="levels.black" class="field__input" type="number"
+                    <BaseNumberInput :id="`${idPrefix}-black`" v-model.number="levels.black" class="field__input" variant="field"
                         min="0" max="254" step="1" required />
                 </label>
                 <label class="field" :for="`${idPrefix}-gamma`">
                     Midtones
-                    <input :id="`${idPrefix}-gamma`" v-model.number="levels.gamma" class="field__input" type="number"
+                    <BaseNumberInput :id="`${idPrefix}-gamma`" v-model.number="levels.gamma" class="field__input" variant="field"
                         :min="MIN_GAMMA" :max="MAX_GAMMA" step="0.01" required @change="onGammaInput" />
                 </label>
                 <label class="field" :for="`${idPrefix}-white`">
                     Highlights
-                    <input :id="`${idPrefix}-white`" v-model.number="levels.white" class="field__input" type="number"
+                    <BaseNumberInput :id="`${idPrefix}-white`" v-model.number="levels.white" class="field__input" variant="field"
                         min="1" max="255" step="1" required />
                 </label>
             </div>
@@ -237,9 +240,9 @@
                 Shadows must be below highlights (0–255), and midtones between {{ MIN_GAMMA }} and {{ MAX_GAMMA }}.
             </p>
             <div class="footer-row">
-                <button type="button" class="reset-button" :disabled="unchanged" @click="reset">Reset</button>
+                <BaseButton variant="secondary" class="reset-button" :disabled="unchanged" @click="reset">Reset</BaseButton>
                 <label class="preview-toggle">
-                    <input v-model="showPreview" type="checkbox" />
+                    <BaseCheckbox v-model="showPreview" />
                     Preview
                 </label>
             </div>
@@ -335,27 +338,9 @@
     gap: 6px;
 }
 
-.field__input {
-    width: 100%;
-    min-width: 0;
-    min-height: 34px;
-    padding: 6px 10px;
-    color: var(--color-text);
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
-    border-radius: 3px;
-    font: inherit;
-}
-
-.field__input:focus-visible,
 .preview-toggle input:focus-visible {
     outline: 1px solid var(--color-focus);
     outline-offset: 0;
-}
-
-.reset-button:focus-visible {
-    outline: 2px solid var(--color-focus);
-    outline-offset: -2px;
 }
 
 .footer-row {
@@ -376,21 +361,6 @@
     align-self: flex-start;
     min-height: 30px;
     padding: 4px 10px;
-    color: var(--color-text);
-    background: var(--color-button-secondary);
-    border: 1px solid var(--color-button-secondary-border);
-    border-radius: var(--radius-button);
-    cursor: pointer;
-}
-
-.reset-button:hover:not(:disabled) {
-    background: var(--color-button-secondary-hover);
-    border-color: var(--color-button-secondary-border-hover);
-}
-
-.reset-button:disabled {
-    opacity: var(--opacity-button-secondary-disabled);
-    cursor: not-allowed;
 }
 
 .validation-message {

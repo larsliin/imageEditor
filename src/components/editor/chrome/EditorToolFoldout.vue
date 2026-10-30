@@ -1,5 +1,6 @@
 <script setup lang="ts">
     import { nextTick, onBeforeUnmount, ref, useId, useTemplateRef, watch } from 'vue';
+    import BaseButton from '@/components/bascomponents/BaseButton.vue';
 
     defineProps<{
         label: string
@@ -12,7 +13,7 @@
     const VIEWPORT_MARGIN = 8;
     const panelId = useId();
     const root = useTemplateRef<HTMLDivElement>('root');
-    const toggleButton = useTemplateRef<HTMLButtonElement>('toggleButton');
+    const toggleButton = useTemplateRef<InstanceType<typeof BaseButton>>('toggleButton');
     const panel = useTemplateRef<HTMLDivElement>('panel');
     const panelStyle = ref<Record<string, string>>({});
 
@@ -73,10 +74,9 @@
 
 <template>
     <div ref="root" class="tool-foldout" @keydown="closeOnEscape" @focusout="closeOnFocusLeave">
-        <button
+        <BaseButton
             ref="toggleButton"
-            type="button"
-            class="tool-button"
+            variant="tool"
             :class="{ 'is-active': active || open }"
             :aria-label="label"
             :title="label"
@@ -85,7 +85,7 @@
             @click="open = !open"
         >
             <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
-        </button>
+        </BaseButton>
         <div
             v-show="open"
             :id="panelId"
@@ -99,8 +99,6 @@
         </div>
     </div>
 </template>
-
-<style scoped src="./toolButtons.css"></style>
 
 <style scoped>
 .tool-foldout__panel {

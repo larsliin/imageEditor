@@ -7,10 +7,11 @@ import { compileScript, parse } from 'vue/compiler-sfc';
 import { transpileModule, ModuleKind } from 'typescript';
 import type { CropRect } from '../crop.ts';
 
-const source = await readFile(new URL('../../components/editor/CropControls.vue', import.meta.url), 'utf8');
+const source = await readFile(new URL('../../components/editor/controls/CropControls.vue', import.meta.url), 'utf8');
 const { descriptor } = parse(source);
 const script = compileScript(descriptor, { id: 'crop-controls-test' }).content
-    .replace("import FloatingToolbar from './FloatingToolbar.vue';", 'const FloatingToolbar = {};')
+    .replace("import FloatingToolbar from '../chrome/FloatingToolbar.vue';", 'const FloatingToolbar = {};')
+    .replaceAll(/import (Base\w+) from '[^']+';/g, 'const $1 = {};')
     .replace('__expose();', '')
     .replace('return __returned__', '__expose(__returned__); return __returned__');
 const compiled = transpileModule(script, { compilerOptions: { module: ModuleKind.ESNext } }).outputText

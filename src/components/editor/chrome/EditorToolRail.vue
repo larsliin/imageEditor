@@ -4,8 +4,9 @@
     import { useOverflowCollapse } from '@/composables/useOverflowCollapse';
     import EditorToolGroups from './EditorToolGroups.vue';
     import EditorToolFoldout from './EditorToolFoldout.vue';
-    import UndoIcon from '@/components/icons/UndoIcon.vue';
-    import RedoIcon from '@/components/icons/RedoIcon.vue';
+    import UndoIcon from '@/components/editor/icons/UndoIcon.vue';
+    import RedoIcon from '@/components/editor/icons/RedoIcon.vue';
+    import BaseButton from '@/components/bascomponents/BaseButton.vue';
 
     const props = defineProps<{
         activeTool: ToolId | null
@@ -49,51 +50,47 @@
     <nav ref="rail" class="tool-rail" aria-label="Editor tools">
         <fieldset class="tool-rail__controls" :disabled="popupOpen" aria-label="Editor tools">
             <div class="tool-group" role="group" aria-label="File">
-                <button
-                    type="button"
-                    class="tool-button"
+                <BaseButton
+                    variant="tool"
                     aria-label="Import image"
                     title="Import image"
                     :disabled="busy"
                     @click="emit('import')"
                 >
                     <i class="bi bi-folder2-open" aria-hidden="true"></i>
-                </button>
-                <button
-                    type="button"
-                    class="tool-button"
+                </BaseButton>
+                <BaseButton
+                    variant="tool"
                     aria-label="Export"
                     title="Export"
                     :disabled="!hasImage || busy"
                     @click="emit('export')"
                 >
                     <i class="bi bi-download" aria-hidden="true"></i>
-                </button>
+                </BaseButton>
             </div>
 
             <hr class="separator" />
 
             <div class="tool-group" role="group" aria-label="Edit history">
-                <button
-                    type="button"
-                    class="tool-button"
+                <BaseButton
+                    variant="tool"
                     aria-label="Undo"
                     title="Undo last edit (Ctrl+Z)"
                     :disabled="!hasImage || busy || !canUndo"
                     @click="emit('undo')"
                 >
                     <UndoIcon />
-                </button>
-                <button
-                    type="button"
-                    class="tool-button"
+                </BaseButton>
+                <BaseButton
+                    variant="tool"
                     aria-label="Redo"
                     title="Redo last undone edit (Ctrl+Y or Ctrl+Shift+Z)"
                     :disabled="!hasImage || busy || !canRedo"
                     @click="emit('redo')"
                 >
                     <RedoIcon />
-                </button>
+                </BaseButton>
             </div>
 
             <hr class="separator" />

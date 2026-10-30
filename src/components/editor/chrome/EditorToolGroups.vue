@@ -1,7 +1,8 @@
 <script setup lang="ts">
     import { EDIT_TOOLS, PAN_TOOL, type ToolId } from '@/types/editor';
-    import CurvesIcon from '@/components/icons/CurvesIcon.vue';
-    import PanIcon from '@/components/icons/PanIcon.vue';
+    import CurvesIcon from '@/components/editor/icons/CurvesIcon.vue';
+    import PanIcon from '@/components/editor/icons/PanIcon.vue';
+    import BaseButton from '@/components/bascomponents/BaseButton.vue';
 
     defineProps<{
         activeTool: ToolId | null
@@ -23,9 +24,8 @@
     <div class="tool-groups" :class="`tool-groups--${layout}`">
         <div class="tool-group tool-group--edit" role="group" aria-label="Edit tools">
             <template v-for="tool in EDIT_TOOLS" :key="tool.id">
-                <button
-                    type="button"
-                    class="tool-button"
+                <BaseButton
+                    variant="tool"
                     :class="{ 'is-active': activeTool === tool.id }"
                     :aria-pressed="activeTool === tool.id"
                     :aria-label="tool.label"
@@ -35,7 +35,7 @@
                 >
                     <CurvesIcon v-if="tool.id === 'curves'" />
                     <i v-else class="bi" :class="tool.icon" aria-hidden="true"></i>
-                </button>
+                </BaseButton>
                 <hr v-if="tool.id === 'rotate'" class="separator" />
             </template>
         </div>
@@ -43,29 +43,26 @@
         <hr class="separator" />
 
         <div class="tool-group" role="group" aria-label="View tools">
-            <button
-                type="button"
-                class="tool-button"
+            <BaseButton
+                variant="tool"
                 aria-label="Zoom in"
                 title="Zoom in (Ctrl++)"
                 :disabled="!canZoomIn"
                 @click="emit('zoom-in')"
             >
                 <i class="bi bi-zoom-in" aria-hidden="true"></i>
-            </button>
-            <button
-                type="button"
-                class="tool-button"
+            </BaseButton>
+            <BaseButton
+                variant="tool"
                 aria-label="Zoom out"
                 title="Zoom out (Ctrl+-)"
                 :disabled="!canZoomOut"
                 @click="emit('zoom-out')"
             >
                 <i class="bi bi-zoom-out" aria-hidden="true"></i>
-            </button>
-            <button
-                type="button"
-                class="tool-button"
+            </BaseButton>
+            <BaseButton
+                variant="tool"
                 :class="{ 'is-active': activeTool === PAN_TOOL.id }"
                 :aria-pressed="activeTool === PAN_TOOL.id"
                 :aria-label="PAN_TOOL.label"
@@ -74,7 +71,7 @@
                 @click="emit('select-tool', PAN_TOOL.id)"
             >
                 <PanIcon />
-            </button>
+            </BaseButton>
         </div>
     </div>
 </template>

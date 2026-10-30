@@ -145,7 +145,7 @@ Previews are temporary until applied. Cancel or Escape discards the current
 tool's preview; applied edits are undoable. There is not currently a command to
 reset the entire document to the imported image.
 
-Color tool dialogs share `src/components/editor/ToolModal.vue`: provide a title,
+Color tool dialogs share `src/components/editor/dialogs/ToolModal.vue`: provide a title,
 apply label, validity, busy/error state, and tool-specific fields through its
 default slot. It emits `apply` and `cancel` and handles modal focus, keyboard
 navigation, and shared actions. Mount it conditionally while the tool is open.
@@ -250,7 +250,7 @@ node --test src/lib/__tests__/useImageDocument.test.ts
 Run the export encoding, lifecycle, and editor top-bar rename tests:
 
 ```sh
-node --test src/lib/__tests__/export.test.ts src/lib/__tests__/useImageDocument.test.ts src/components/editor/__tests__/EditorTopBar.test.ts
+node --test src/lib/__tests__/export.test.ts src/lib/__tests__/useImageDocument.test.ts src/components/editor/chrome/__tests__/EditorTopBar.test.ts
 ```
 
 ## Tech stack

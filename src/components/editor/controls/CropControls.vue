@@ -2,7 +2,10 @@
     import { computed } from 'vue';
     import { MAX_STRAIGHTEN_ANGLE, type CropRect } from '@/lib/crop';
     import type { Size } from '@/lib/zoom';
-    import FloatingToolbar from './FloatingToolbar.vue';
+    import FloatingToolbar from '../chrome/FloatingToolbar.vue';
+    import BaseButton from '@/components/bascomponents/BaseButton.vue';
+    import BaseRangeInput from '@/components/bascomponents/BaseRangeInput.vue';
+    import BaseCheckbox from '@/components/bascomponents/BaseCheckbox.vue';
 
     const props = defineProps<{
         image: Size
@@ -66,24 +69,23 @@
                             :max="displayDimension(image.height - crop.y)" required :step="snapToPixel ? 1 : 'any'"
                             @blur="zeroIfEmpty($event, 'height')" /></label>
                         <label class="crop-snap">
-                            <input
+                            <BaseCheckbox
                                 v-model="snapToPixel"
                                 aria-label="Snap to pixel"
                                 title="Keep crop edges aligned to source pixels while dragging."
-                                type="checkbox"
                             />
                             Snap to pixel
                         </label>
                         <span class="crop-divider" role="separator" aria-orientation="vertical"></span>
                         <label class="crop-angle-slider">Straighten
-                            <input v-model.number="angle" class="crop-angle-range" aria-label="Straighten angle slider" type="range"
+                            <BaseRangeInput v-model.number="angle" class="crop-angle-range" aria-label="Straighten angle slider"
                                 :min="-MAX_STRAIGHTEN_ANGLE" :max="MAX_STRAIGHTEN_ANGLE" step="0.1" />
                         </label>
                         <label><input v-model.number="angle" aria-label="Straighten angle in degrees" type="number"
                             :min="-MAX_STRAIGHTEN_ANGLE" :max="MAX_STRAIGHTEN_ANGLE" step="0.1" required @blur="zeroIfEmpty($event, 'angle')" /> deg</label>
-                        <button type="button" class="icon-button" aria-label="Reset angle" title="Reset angle" :disabled="angle === 0" @click="angle = 0">
+                        <BaseButton class="icon-button" aria-label="Reset angle" title="Reset angle" :disabled="angle === 0" @click="angle = 0">
                             <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-                        </button>
+                        </BaseButton>
                     </div>
                     <p v-if="!valid && !dragging" class="crop-error" role="alert"
                         :title="`Enter a non-empty crop inside the image bounds and an angle within ±${MAX_STRAIGHTEN_ANGLE}°.`">
@@ -91,12 +93,12 @@
                     </p>
                     <div class="crop-actions">
                         <span class="crop-divider" role="separator" aria-orientation="vertical"></span>
-                        <button type="submit" class="icon-button" aria-label="Apply crop" title="Apply crop" :disabled="!valid || unchanged">
+                        <BaseButton type="submit" class="icon-button" aria-label="Apply crop" title="Apply crop" :disabled="!valid || unchanged">
                             <i class="bi bi-check-lg" aria-hidden="true"></i>
-                        </button>
-                        <button type="button" class="icon-button" aria-label="Cancel crop" title="Cancel crop" @click="emit('cancel')">
+                        </BaseButton>
+                        <BaseButton class="icon-button" aria-label="Cancel crop" title="Cancel crop" @click="emit('cancel')">
                             <i class="bi bi-x-lg" aria-hidden="true"></i>
-                        </button>
+                        </BaseButton>
                     </div>
                 </fieldset>
             </form>
@@ -181,37 +183,6 @@ input[type='range'] {
     padding: 0;
     background: transparent;
     border: 0;
-}
-
-.crop-angle-range::-webkit-slider-runnable-track {
-    height: 4px;
-    background: var(--color-border);
-    border-radius: 2px;
-}
-
-.crop-angle-range::-moz-range-track,
-.crop-angle-range::-moz-range-progress {
-    height: 4px;
-    background: var(--color-border);
-    border-radius: 2px;
-}
-
-.crop-angle-range::-webkit-slider-thumb {
-    appearance: none;
-    width: 14px;
-    height: 14px;
-    margin-top: -5px;
-    background: var(--color-text);
-    border: 0;
-    border-radius: 50%;
-}
-
-.crop-angle-range::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    background: var(--color-text);
-    border: 0;
-    border-radius: 50%;
 }
 
 input[type='number'] {

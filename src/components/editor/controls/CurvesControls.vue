@@ -16,7 +16,10 @@
         type CurvesParams,
     } from '@/lib/curves';
     import { computeHistogram } from '@/lib/levels';
-    import ToolModal from './ToolModal.vue';
+    import ToolModal from '../dialogs/ToolModal.vue';
+    import BaseButton from '@/components/bascomponents/BaseButton.vue';
+    import BaseNumberInput from '@/components/bascomponents/BaseNumberInput.vue';
+    import BaseCheckbox from '@/components/bascomponents/BaseCheckbox.vue';
 
     const HISTOGRAM_SAMPLE_SIZE = 256;
     const PAD = 6;
@@ -291,18 +294,18 @@
             <div class="fields">
                 <label class="field" :for="`${idPrefix}-input`">
                     Input
-                    <input :id="`${idPrefix}-input`" class="field__input" type="number" min="0" max="255" step="1"
+                    <BaseNumberInput :id="`${idPrefix}-input`" class="field__input" variant="field" min="0" max="255" step="1"
                         :value="selectedPoint?.x" @change="onField('x', $event)" />
                 </label>
                 <label class="field" :for="`${idPrefix}-output`">
                     Output
-                    <input :id="`${idPrefix}-output`" class="field__input" type="number" min="0" max="255" step="1"
+                    <BaseNumberInput :id="`${idPrefix}-output`" class="field__input" variant="field" min="0" max="255" step="1"
                         :value="selectedPoint?.y" @change="onField('y', $event)" />
                 </label>
-                <button type="button" class="reset-button" :disabled="unchanged" @click="reset">Reset</button>
+                <BaseButton variant="secondary" class="reset-button" :disabled="unchanged" @click="reset">Reset</BaseButton>
             </div>
             <label class="preview-toggle">
-                <input v-model="showPreview" type="checkbox" />
+                <BaseCheckbox v-model="showPreview" />
                 Preview
             </label>
         </div>
@@ -423,7 +426,7 @@
     font-size: 12px;
 }
 
-.field__input {
+.channel-select__input {
     width: 100%;
     min-width: 0;
     min-height: 34px;
@@ -435,15 +438,10 @@
     font: inherit;
 }
 
-.field__input:focus-visible,
+.channel-select__input:focus-visible,
 .preview-toggle input:focus-visible {
     outline: 1px solid var(--color-focus);
     outline-offset: 0;
-}
-
-.reset-button:focus-visible {
-    outline: 2px solid var(--color-focus);
-    outline-offset: -2px;
 }
 
 .preview-toggle {
@@ -457,22 +455,7 @@
 .reset-button {
     min-height: 34px;
     padding: 4px 12px;
-    color: var(--color-text);
-    background: var(--color-button-secondary);
-    border: 1px solid var(--color-button-secondary-border);
-    border-radius: var(--radius-button);
-    cursor: pointer;
-}
-
-.reset-button:hover:not(:disabled) {
-    background: var(--color-button-secondary-hover);
-    border-color: var(--color-button-secondary-border-hover);
-}
-
-.reset-button:disabled {
-    opacity: var(--opacity-button-secondary-disabled);
-    cursor: not-allowed;
 }
 </style>
 
-<style scoped src="@/components/editor/curvesResponsive.css"></style>
+<style scoped src="@/components/editor/controls/curvesResponsive.css"></style>

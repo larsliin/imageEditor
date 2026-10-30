@@ -1,25 +1,25 @@
 <script setup lang="ts">
     import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
-    import EditorTopBar from './components/editor/EditorTopBar.vue';
-    import EditorToolRail from './components/editor/EditorToolRail.vue';
-    import EditorCanvas from './components/editor/EditorCanvas.vue';
-    import ZoomControls from './components/editor/ZoomControls.vue';
-    import ResizeControls from './components/editor/ResizeControls.vue';
-    import RotateControls from './components/editor/RotateControls.vue';
+    import EditorTopBar from './components/editor/chrome/EditorTopBar.vue';
+    import EditorToolRail from './components/editor/chrome/EditorToolRail.vue';
+    import EditorCanvas from './components/editor/canvas/EditorCanvas.vue';
+    import ZoomControls from './components/editor/controls/ZoomControls.vue';
+    import ResizeControls from './components/editor/controls/ResizeControls.vue';
+    import RotateControls from './components/editor/controls/RotateControls.vue';
     import { rotatedSize, type QuarterTurns } from './lib/rotate';
     import { useImageDocument } from './composables/useImageDocument';
     import { useAnimatedZoom } from './composables/useAnimatedZoom';
     import type { Size } from './lib/zoom';
     import type { ToolId } from './types/editor';
     import type { CropRect } from './lib/crop';
-    import LevelsControls from './components/editor/LevelsControls.vue';
+    import LevelsControls from './components/editor/controls/LevelsControls.vue';
     import type { LevelsParams } from './lib/levels';
-    import CurvesControls from './components/editor/CurvesControls.vue';
+    import CurvesControls from './components/editor/controls/CurvesControls.vue';
     import type { CurvesParams } from './lib/curves';
-    import ColorModeControls from './components/editor/ColorModeControls.vue';
-    import BrightnessContrastControls from './components/editor/BrightnessContrastControls.vue';
+    import ColorModeControls from './components/editor/controls/ColorModeControls.vue';
+    import BrightnessContrastControls from './components/editor/controls/BrightnessContrastControls.vue';
     import type { BrightnessContrastParams } from './lib/brightnessContrast';
-    import ExportDialog from './components/editor/ExportDialog.vue';
+    import ExportDialog from './components/editor/dialogs/ExportDialog.vue';
     import type { PreparedExport } from './lib/imageIO';
     import type { ColorMode } from './lib/colorMode';
 
@@ -37,7 +37,7 @@
     const imageSize = computed<Size | null>(() =>
         bitmap.value ? rotatedSize(bitmap.value, rotationPreview.value) : null,
     );
-    const { zoom, targetZoom, isFit, canZoomIn, canZoomOut, zoomIn, zoomOut, fitToView, actualSize } = useAnimatedZoom(
+    const { zoom, targetZoom, isFit, canZoomIn, canZoomOut, zoomIn, zoomOut, fitToView, actualSize, setZoom } = useAnimatedZoom(
         imageSize,
         viewportSize,
         documentId,
@@ -270,6 +270,7 @@
                     :rulers-enabled="rulersEnabled"
                     @fit="fitToView"
                     @actual-size="actualSize"
+                    @zoom-change="setZoom"
                 />
             </template>
         </EditorCanvas>

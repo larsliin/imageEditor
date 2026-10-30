@@ -8,8 +8,9 @@
         isValidBrightnessContrast,
         type BrightnessContrastParams,
     } from '@/lib/brightnessContrast';
-    import ToolModal from './ToolModal.vue';
-    import '@/assets/range-slider.css';
+    import ToolModal from '../dialogs/ToolModal.vue';
+    import BaseRangeInput from '@/components/bascomponents/BaseRangeInput.vue';
+    import BaseCheckbox from '@/components/bascomponents/BaseCheckbox.vue';
 
     const props = defineProps<{
         image: ImageBitmap
@@ -62,10 +63,9 @@
                     <label :for="`${idPrefix}-brightness`" class="control-label">Brightness</label>
                     <span class="control-value">{{ params.brightness }}</span>
                 </div>
-                <input
+                <BaseRangeInput
                     :id="`${idPrefix}-brightness`"
                     v-model.number="params.brightness"
-                    type="range"
                     :min="MIN_BRIGHTNESS_CONTRAST"
                     :max="MAX_BRIGHTNESS_CONTRAST"
                     step="1"
@@ -78,10 +78,9 @@
                     <label :for="`${idPrefix}-contrast`" class="control-label">Contrast</label>
                     <span class="control-value">{{ params.contrast }}</span>
                 </div>
-                <input
+                <BaseRangeInput
                     :id="`${idPrefix}-contrast`"
                     v-model.number="params.contrast"
-                    type="range"
                     :min="MIN_BRIGHTNESS_CONTRAST"
                     :max="MAX_BRIGHTNESS_CONTRAST"
                     step="1"
@@ -91,7 +90,7 @@
 
             <div class="preview-section">
                 <label class="checkbox-label">
-                    <input v-model="showPreview" type="checkbox" class="checkbox" />
+                    <BaseCheckbox v-model="showPreview" class="checkbox" />
                     <span>Live preview</span>
                 </label>
             </div>

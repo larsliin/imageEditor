@@ -1,6 +1,7 @@
 <script setup lang="ts">
     import { computed, nextTick, shallowRef, useTemplateRef } from 'vue';
     import type { ImageInfo } from '@/types/editor';
+    import BaseButton from '@/components/bascomponents/BaseButton.vue';
 
     const props = defineProps<{
         image: ImageInfo | null
@@ -100,9 +101,8 @@
             </div>
         </dl>
         <div class="controls-group">
-            <button
+            <BaseButton
                 class="rulers-toggle"
-                type="button"
                 aria-label="Pixel rulers"
                 :aria-pressed="rulersEnabled"
                 :title="rulersEnabled ? 'Hide pixel rulers' : 'Show pixel rulers'"
@@ -110,27 +110,25 @@
                 @click="emit('toggle-rulers')"
             >
                 <i class="bi bi-rulers" aria-hidden="true"></i>
-            </button>
-            <button
+            </BaseButton>
+            <BaseButton
                 class="theme-toggle"
-                type="button"
                 :aria-label="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
                 :title="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
                 @click="emit('toggle-theme')"
             >
                 <i :class="isDarkMode ? 'bi bi-sun' : 'bi bi-moon'" aria-hidden="true"></i>
-            </button>
+            </BaseButton>
         </div>
-        <button
+        <BaseButton
             class="close-button"
-            type="button"
             aria-label="Close image"
             title="Close and unload the current image"
             :disabled="!image"
             @click="emit('close')"
         >
             <i class="bi bi-x-lg" aria-hidden="true"></i>
-        </button>
+        </BaseButton>
     </header>
 </template>
 

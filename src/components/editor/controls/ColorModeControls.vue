@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { ref, useId, watch } from 'vue';
     import { COLOR_MODES, type ColorMode } from '@/lib/colorMode';
-    import ToolModal from './ToolModal.vue';
+    import ToolModal from '../dialogs/ToolModal.vue';
 
     const props = defineProps<{
         disabled: boolean

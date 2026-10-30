@@ -1,7 +1,8 @@
 <script setup lang="ts">
     import { nextTick, onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue';
     import type { QuarterTurns } from '@/lib/rotate';
-    import FloatingToolbar from './FloatingToolbar.vue';
+    import FloatingToolbar from '../chrome/FloatingToolbar.vue';
+    import BaseButton from '@/components/bascomponents/BaseButton.vue';
 
     const props = defineProps<{
         disabled: boolean
@@ -17,7 +18,7 @@
     const turns = shallowRef<QuarterTurns>(0);
     const flipH = shallowRef(false);
     const flipV = shallowRef(false);
-    const clockwise = useTemplateRef<HTMLButtonElement>('clockwise');
+    const clockwise = useTemplateRef<InstanceType<typeof BaseButton>>('clockwise');
     let previousFocus: HTMLElement | null = null;
 
     onMounted(() => {
@@ -64,31 +65,31 @@
         <FloatingToolbar label="Rotate toolbar" @keydown.esc.stop.prevent="cancel">
             <form class="rotate-form" aria-label="Rotate image" :aria-busy="disabled" @submit.prevent="apply">
                 <fieldset class="rotate-controls" :disabled="disabled">
-                    <button ref="clockwise" type="button" class="icon-button" aria-label="Rotate clockwise"
+                    <BaseButton ref="clockwise" class="icon-button" aria-label="Rotate clockwise"
                         title="Rotate 90 degrees clockwise" @click="rotate(1)">
                         <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
-                    </button>
-                    <button type="button" class="icon-button" aria-label="Rotate counterclockwise"
+                    </BaseButton>
+                    <BaseButton class="icon-button" aria-label="Rotate counterclockwise"
                         title="Rotate 90 degrees counterclockwise" @click="rotate(-1)">
                         <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-                    </button>
+                    </BaseButton>
                     <span class="rotate-divider" role="separator" aria-orientation="vertical"></span>
-                    <button type="button" class="icon-button" :class="{ active: flipH }" aria-label="Flip horizontally"
+                    <BaseButton class="icon-button" :class="{ active: flipH }" aria-label="Flip horizontally"
                         title="Flip image horizontally (mirror left-right)" @click="toggleFlipH">
                         <i class="bi bi-symmetry-horizontal" aria-hidden="true"></i>
-                    </button>
-                    <button type="button" class="icon-button" :class="{ active: flipV }" aria-label="Flip vertically"
+                    </BaseButton>
+                    <BaseButton class="icon-button" :class="{ active: flipV }" aria-label="Flip vertically"
                         title="Flip image vertically (mirror top-bottom)" @click="toggleFlipV">
                         <i class="bi bi-symmetry-vertical" aria-hidden="true"></i>
-                    </button>
+                    </BaseButton>
                     <span class="rotate-divider" role="separator" aria-orientation="vertical"></span>
-                    <button type="submit" class="icon-button icon-button--apply" aria-label="Apply rotation"
+                    <BaseButton type="submit" class="icon-button icon-button--apply" aria-label="Apply rotation"
                         title="Apply rotation" :disabled="turns === 0 && !flipH && !flipV">
                         <i class="bi bi-check-lg" aria-hidden="true"></i>
-                    </button>
-                    <button type="button" class="icon-button" aria-label="Cancel rotation" title="Cancel rotation" @click="cancel">
+                    </BaseButton>
+                    <BaseButton class="icon-button" aria-label="Cancel rotation" title="Cancel rotation" @click="cancel">
                         <i class="bi bi-x-lg" aria-hidden="true"></i>
-                    </button>
+                    </BaseButton>
                 </fieldset>
                 <p v-if="error" class="rotate-error" role="alert">{{ error }}</p>
                 <p v-if="disabled" class="rotate-status" role="status">Processing image...</p>

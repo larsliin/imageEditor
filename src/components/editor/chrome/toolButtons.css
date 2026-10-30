@@ -1,0 +1,12 @@
+.tool-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.separator {
+    align-self: center;
+    width: 28px;
+    border: none;
+    border-top: 1px solid var(--color-border);
+}

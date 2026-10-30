@@ -68,7 +68,7 @@
                 <select v-model="displayedQuality" class="export-select" aria-label="Quality" :disabled="mimeType === 'image/png'">
                     <option v-if="mimeType === 'image/png'" value=""></option>
                     <option v-for="preset in EXPORT_QUALITY_PRESETS" :key="preset.value" :value="preset.value">
-                        {{ preset.label }} ({{ Math.round(preset.value * 100) }}%)
+                        {{ preset.label }}
                     </option>
                 </select>
             </div>

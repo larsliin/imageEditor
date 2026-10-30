@@ -2,7 +2,7 @@
     import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue';
     import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, snapCropToPixels, isValidCrop, previewToImagePoint, isCropInsideRotatedImage, isValidAngle, largestCropInsideRotatedImage, type CropRect, type CropHandle, type Point } from '@/lib/crop';
     import type { Size } from '@/lib/zoom';
-    import CropControls from './CropControls.vue';
+    import CropControls from '../controls/CropControls.vue';
 
     const props = defineProps<{
         image: Size

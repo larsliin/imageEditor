@@ -2,7 +2,9 @@
     import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef } from 'vue';
     import { MAX_RESIZE_DIMENSION, dimensionForPercentage, heightForWidth, isValidResize, widthForHeight } from '@/lib/resize';
     import type { Size } from '@/lib/zoom';
-    import FloatingToolbar from './FloatingToolbar.vue';
+    import FloatingToolbar from '../chrome/FloatingToolbar.vue';
+    import BaseButton from '@/components/bascomponents/BaseButton.vue';
+    import BaseNumberInput from '@/components/bascomponents/BaseNumberInput.vue';
 
     const props = defineProps<{
         image: Size
@@ -21,7 +23,7 @@
     const size = ref<InputDimensions>({ width: props.image.width, height: props.image.height });
     const percentages = ref<InputDimensions>({ width: 100, height: 100 });
     const lockRatio = shallowRef(true);
-    const widthInput = useTemplateRef<HTMLInputElement>('width-input');
+    const widthInput = useTemplateRef<InstanceType<typeof BaseNumberInput>>('width-input');
     let previousFocus: HTMLElement | null = null;
 
     onMounted(() => {
@@ -101,28 +103,27 @@
                 <fieldset class="resize-controls" :disabled="disabled">
                     <label class="dimension-label">
                         Width px
-                        <input ref="width-input" v-model.number="size.width" class="dimension-input" aria-label="Resize width" type="number" min="1"
+                        <BaseNumberInput ref="width-input" v-model.number="size.width" class="dimension-input" aria-label="Resize width" min="1"
                             :max="MAX_RESIZE_DIMENSION" required step="1" @input="onDimensionInput('width', 'pixels')" />
                     </label>
                     <label class="dimension-label">
                         Height px
-                        <input v-model.number="size.height" class="dimension-input" aria-label="Resize height" type="number" min="1"
+                        <BaseNumberInput v-model.number="size.height" class="dimension-input" aria-label="Resize height" min="1"
                             :max="MAX_RESIZE_DIMENSION" required step="1" @input="onDimensionInput('height', 'pixels')" />
                     </label>
                     <span class="resize-divider" role="separator" aria-orientation="vertical"></span>
                     <label class="dimension-label">
                         Width %
-                        <input v-model.number="percentages.width" class="dimension-input" aria-label="Resize width percentage"
-                            type="number" min="0" step="0.1" required @input="onDimensionInput('width', 'percentage')" />
+                        <BaseNumberInput v-model.number="percentages.width" class="dimension-input" aria-label="Resize width percentage"
+                            min="0" step="0.1" required @input="onDimensionInput('width', 'percentage')" />
                     </label>
                     <label class="dimension-label">
                         Height %
-                        <input v-model.number="percentages.height" class="dimension-input" aria-label="Resize height percentage"
-                            type="number" min="0" step="0.1" required @input="onDimensionInput('height', 'percentage')" />
+                        <BaseNumberInput v-model.number="percentages.height" class="dimension-input" aria-label="Resize height percentage"
+                            min="0" step="0.1" required @input="onDimensionInput('height', 'percentage')" />
                     </label>
                     <div class="resize-actions">
-                        <button
-                            type="button"
+                        <BaseButton
                             class="resize-button lock-button"
                             :aria-pressed="lockRatio"
                             :aria-label="lockRatio ? 'Aspect ratio locked' : 'Aspect ratio unlocked'"
@@ -130,15 +131,15 @@
                             @click="toggleLock"
                         >
                             <i aria-hidden="true" class="bi" :class="lockRatio ? 'bi-lock-fill' : 'bi-unlock'"></i>
-                        </button>
+                        </BaseButton>
                         <span class="resize-divider" role="separator" aria-orientation="vertical"></span>
-                        <button type="submit" class="resize-button resize-button--apply" aria-label="Apply resize" title="Apply resize"
+                        <BaseButton type="submit" class="resize-button resize-button--apply" aria-label="Apply resize" title="Apply resize"
                             :disabled="!valid || unchanged">
                             <i class="bi bi-check-lg" aria-hidden="true"></i>
-                        </button>
-                        <button type="button" class="resize-button" aria-label="Cancel resize" title="Cancel resize" @click="cancel">
+                        </BaseButton>
+                        <BaseButton class="resize-button" aria-label="Cancel resize" title="Cancel resize" @click="cancel">
                             <i class="bi bi-x-lg" aria-hidden="true"></i>
-                        </button>
+                        </BaseButton>
                     </div>
                 </fieldset>
                 <p v-if="!valid" class="validation-message" role="alert">

@@ -6,6 +6,7 @@ import { createRenderer, markRaw, type Component } from 'vue';
 import { compileScript, parse } from 'vue/compiler-sfc';
 import { transpileModule, ModuleKind } from 'typescript';
 import type { ImageInfo } from '@/types/editor';
+import { baseControlUrl } from '../../../bascomponents/__tests__/loadBaseControl.ts';
 
 // This parameter is part of the callback type and is intentionally not referenced here.
 // eslint-disable-next-line no-unused-vars
@@ -75,6 +76,7 @@ const source = await readFile(new URL('../EditorTopBar.vue', import.meta.url), '
 const { descriptor } = parse(source);
 const script = compileScript(descriptor, { id: 'editor-top-bar-test', inlineTemplate: true }).content;
 const compiled = transpileModule(script, { compilerOptions: { module: ModuleKind.ESNext } }).outputText
+    .replaceAll("'@/components/bascomponents/BaseButton.vue'", JSON.stringify(await baseControlUrl('BaseButton')))
     .replaceAll("'vue'", JSON.stringify(import.meta.resolve('vue')))
     .replaceAll('"vue"', JSON.stringify(import.meta.resolve('vue')));
 const { default: editorTopBar }: { default: Component } = await import(
