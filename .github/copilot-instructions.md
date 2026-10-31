@@ -1,5 +1,10 @@
 # ImageTrim
 
+For user-facing workflows, tool behavior, keyboard shortcuts, and export
+guidance, see the [ImageTrim user guide](../docs/PROJECT_GUIDE.md). Keep this
+guide focused on helping users operate the app; implementation requirements
+belong in these Copilot instructions and the source code.
+
 ## Purpose and scope
 
 Build a lightweight Vue 3 image editor for basic cropping, scaling/resizing,
@@ -80,9 +85,9 @@ or backend services unless explicitly requested.
 
 - Run `npm run build` after code changes; it includes TypeScript checking and
   the production build. Use `npm run dev` for interactive validation.
-- No test runner is configured yet. When tests are introduced, prioritize crop
-  coordinate conversion, resize dimensions/aspect ratios, reset behavior, and
-  preview/export consistency.
+- Tests use Node.js's built-in `node:test` runner. When changing image behavior,
+  prioritize crop coordinate conversion, resize dimensions/aspect ratios, reset
+  behavior, and preview/export consistency.
 - Verify image-related changes with landscape and portrait images,
   transparency, and invalid inputs as applicable.
 
