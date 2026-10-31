@@ -4,9 +4,13 @@
     import { useOverflowCollapse } from '@/composables/useOverflowCollapse';
     import EditorToolGroups from './EditorToolGroups.vue';
     import EditorToolFoldout from './EditorToolFoldout.vue';
+    import PanIcon from '@/components/editor/icons/PanIcon.vue';
     import UndoIcon from '@/components/editor/icons/UndoIcon.vue';
     import RedoIcon from '@/components/editor/icons/RedoIcon.vue';
     import BaseButton from '@/components/bascomponents/BaseButton.vue';
+    import { shortcutModifierLabel } from '@/lib/shortcuts';
+
+    const modifier = shortcutModifierLabel();
 
     const props = defineProps<{
         activeTool: ToolId | null
@@ -32,7 +36,6 @@
     const FOLDOUT_TOOL_IDS: readonly ToolId[] = [
         ...EDIT_TOOLS.map((tool) => tool.id),
         ...PAINT_TOOLS.map((tool) => tool.id),
-        PAN_TOOL.id,
     ];
 
     const rail = useTemplateRef<HTMLElement>('rail');
@@ -80,7 +83,7 @@
                 <BaseButton
                     variant="tool"
                     aria-label="Undo"
-                    title="Undo last edit (Ctrl+Z)"
+                    :title="`Undo last edit (${modifier}+Z)`"
                     :disabled="!hasImage || busy || !canUndo"
                     @click="emit('undo')"
                 >
@@ -89,7 +92,7 @@
                 <BaseButton
                     variant="tool"
                     aria-label="Redo"
-                    title="Redo last undone edit (Ctrl+Y or Ctrl+Shift+Z)"
+                    :title="`Redo last undone edit (${modifier}+Y or ${modifier}+Shift+Z)`"
                     :disabled="!hasImage || busy || !canRedo"
                     @click="emit('redo')"
                 >
@@ -110,11 +113,7 @@
                     :active-tool="activeTool"
                     :has-image="hasImage"
                     :busy="busy"
-                    :can-zoom-in="canZoomIn"
-                    :can-zoom-out="canZoomOut"
                     @select-tool="selectTool"
-                    @zoom-in="emit('zoom-in')"
-                    @zoom-out="emit('zoom-out')"
                 />
             </EditorToolFoldout>
             <EditorToolGroups
@@ -123,12 +122,42 @@
                 :active-tool="activeTool"
                 :has-image="hasImage"
                 :busy="busy"
-                :can-zoom-in="canZoomIn"
-                :can-zoom-out="canZoomOut"
                 @select-tool="selectTool"
-                @zoom-in="emit('zoom-in')"
-                @zoom-out="emit('zoom-out')"
             />
+
+            <hr v-if="collapsed" class="separator" />
+
+            <div class="tool-group" role="group" aria-label="View tools">
+                <BaseButton
+                    variant="tool"
+                    aria-label="Zoom in"
+                    :title="`Zoom in (${modifier}++)`"
+                    :disabled="!canZoomIn"
+                    @click="emit('zoom-in')"
+                >
+                    <i class="bi bi-zoom-in" aria-hidden="true"></i>
+                </BaseButton>
+                <BaseButton
+                    variant="tool"
+                    aria-label="Zoom out"
+                    :title="`Zoom out (${modifier}+-)`"
+                    :disabled="!canZoomOut"
+                    @click="emit('zoom-out')"
+                >
+                    <i class="bi bi-zoom-out" aria-hidden="true"></i>
+                </BaseButton>
+                <BaseButton
+                    variant="tool"
+                    :class="{ 'is-active': activeTool === PAN_TOOL.id }"
+                    :aria-pressed="activeTool === PAN_TOOL.id"
+                    :aria-label="PAN_TOOL.label"
+                    :title="PAN_TOOL.label"
+                    :disabled="!hasImage || busy"
+                    @click="selectTool(PAN_TOOL.id)"
+                >
+                    <PanIcon />
+                </BaseButton>
+            </div>
         </fieldset>
     </nav>
 </template>

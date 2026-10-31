@@ -25,6 +25,7 @@
     import type { PreparedExport } from './lib/imageIO';
     import type { ColorMode } from './lib/colorMode';
     import { useBrushTools } from './composables/useBrushTools';
+    import { hasShortcutModifier } from './lib/shortcuts';
 
     const {
         bitmap, info, documentId, status, error, isBusy, importImage, exportImage, cropImage, rotateImage,
@@ -40,10 +41,28 @@
     const imageSize = computed<Size | null>(() =>
         bitmap.value ? rotatedSize(bitmap.value, rotationPreview.value) : null,
     );
+    const navigationAnimationStorageKey = 'image-editor-navigation-animation';
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const prefersReducedMotion = shallowRef(reducedMotionQuery.matches);
+    const navigationAnimationsPreference = shallowRef(true);
+    try {
+        const savedPreference = localStorage.getItem(navigationAnimationStorageKey);
+        if (savedPreference === 'true' || savedPreference === 'false') {
+            navigationAnimationsPreference.value = savedPreference === 'true';
+        } else if (savedPreference !== null) {
+            console.warn('Ignoring an invalid saved navigation animation preference:', savedPreference);
+        }
+    } catch (error) {
+        console.warn('Unable to restore the saved navigation animation preference:', error);
+    }
+    const navigationAnimationsEnabled = computed(
+        () => navigationAnimationsPreference.value && !prefersReducedMotion.value,
+    );
     const { zoom, targetZoom, isFit, canZoomIn, canZoomOut, zoomIn, zoomOut, fitToView, actualSize, setZoom } = useAnimatedZoom(
         imageSize,
         viewportSize,
         documentId,
+        { animationsEnabled: navigationAnimationsEnabled },
     );
 
     const activeTool = ref<ToolId | null>(null);
@@ -55,7 +74,7 @@
         || activeTool.value === 'curves'
         || activeTool.value === 'color-mode'
         || activeTool.value === 'brightness-contrast');
-    const rulersEnabled = shallowRef(false);
+    const rulersEnabled = shallowRef(true);
     const rulersStorageKey = 'image-editor-rulers';
 
     try {
@@ -75,6 +94,16 @@
             localStorage.setItem(rulersStorageKey, String(rulersEnabled.value));
         } catch (error) {
             console.warn('Unable to save the rulers preference:', error);
+        }
+    }
+
+    function toggleNavigationAnimations() {
+        if (prefersReducedMotion.value) return;
+        navigationAnimationsPreference.value = !navigationAnimationsPreference.value;
+        try {
+            localStorage.setItem(navigationAnimationStorageKey, String(navigationAnimationsPreference.value));
+        } catch (error) {
+            console.warn('Unable to save the navigation animation preference:', error);
         }
     }
 
@@ -189,7 +218,7 @@
     });
 
     function handleEditorShortcut(event: KeyboardEvent) {
-        if (!event.ctrlKey || event.altKey || event.metaKey) return;
+        if (!hasShortcutModifier(event) || event.altKey) return;
         const target = event.target;
         if (
             target instanceof HTMLElement
@@ -224,11 +253,17 @@
     onMounted(() => {
         window.addEventListener('keydown', handleEditorShortcut);
         window.addEventListener('beforeunload', warnBeforeUnloadWithBrushStrokes);
+        reducedMotionQuery.addEventListener('change', onReducedMotionChange);
     });
     onBeforeUnmount(() => {
         window.removeEventListener('keydown', handleEditorShortcut);
         window.removeEventListener('beforeunload', warnBeforeUnloadWithBrushStrokes);
+        reducedMotionQuery.removeEventListener('change', onReducedMotionChange);
     });
+
+    function onReducedMotionChange(event: MediaQueryListEvent) {
+        prefersReducedMotion.value = event.matches;
+    }
 </script>
 
 <template>
@@ -240,9 +275,12 @@
             :busy="isBusy"
             :is-dark-mode="isDarkMode"
             :rulers-enabled="rulersEnabled"
+            :navigation-animations-enabled="navigationAnimationsEnabled"
+            :prefers-reduced-motion="prefersReducedMotion"
             @rename="renameImage"
             @toggle-theme="toggleTheme"
             @toggle-rulers="toggleRulers"
+            @toggle-navigation-animations="toggleNavigationAnimations"
             @close="closeImage"
         />
         <EditorToolRail
@@ -271,6 +309,7 @@
             :zoom="zoom"
             :rulers-enabled="rulersEnabled"
             :pan-enabled="activeTool === 'pan'"
+            :navigation-animations-enabled="navigationAnimationsEnabled"
             :crop-enabled="activeTool === 'crop'"
             :busy="isBusy"
             :loading="status === 'loading'"

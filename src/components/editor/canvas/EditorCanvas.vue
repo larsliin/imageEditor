@@ -2,6 +2,7 @@
     import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
     import { displaySize, type Size } from '@/lib/zoom';
     import { usePan } from '@/composables/usePan';
+    import { useCanvasWheelZoom, type WheelZoomAnchor } from '@/composables/useCanvasWheelZoom';
     import CropOverlay from './CropOverlay.vue';
     import EditorRulers from './EditorRulers.vue';
     import type { CropRect } from '@/lib/crop';
@@ -17,6 +18,7 @@
         zoom: number
         rulersEnabled: boolean
         panEnabled: boolean
+        navigationAnimationsEnabled: boolean
         cropEnabled: boolean
         busy: boolean
         loading: boolean
@@ -81,6 +83,7 @@
     const { isPanMode, isDragging, stopMomentum } = usePan(viewportRef, {
         enabled: () => props.panEnabled,
         available: () => props.bitmap !== null && !props.busy,
+        animationsEnabled: () => props.navigationAnimationsEnabled,
     });
 
     watch([() => props.zoom, () => props.bitmap], stopMomentum, { flush: 'sync' });
@@ -91,50 +94,15 @@
         return { width: `${size.width}px`, height: `${size.height}px` };
     });
 
-    function handleWheel(event: WheelEvent) {
-        if (!event.ctrlKey) return;
-
-        event.preventDefault();
-        if (event.deltaY === 0) return;
-
-        const viewport = viewportRef.value;
-        const surface = imageSurfaceRef.value;
-        const bounds = surface?.getBoundingClientRect();
-        if (bounds && bounds.width > 0 && bounds.height > 0 && viewport && (viewport.scrollWidth > viewport.clientWidth || viewport.scrollHeight > viewport.clientHeight)) {
-            // Capture the mouse position as a ratio of the image surface,
-            // so we can keep it stable during zoom animation. Only set anchor if viewport is scrollable.
-            pointerAnchor = {
-                clientX: event.clientX,
-                clientY: event.clientY,
-                imageX: (event.clientX - bounds.left) / bounds.width,
-                imageY: (event.clientY - bounds.top) / bounds.height,
-            };
-        } else {
-            pointerAnchor = null;
-        }
-
+    const { handleWheel } = useCanvasWheelZoom(viewportRef, imageSurfaceRef, () => props.bitmap !== null, (event, anchor) => {
+        pointerAnchor = anchor;
         if (event.deltaY < 0) emit('zoom-in');
         else emit('zoom-out');
-    }
-
-    // Open dialogs make the viewport inert, so Ctrl+wheel over the dialog or the inert image area
-    // never reaches the viewport's own handler and would zoom the page instead.
-    function handleModalWheel(event: WheelEvent) {
-        if (!event.ctrlKey || !props.bitmap) return;
-        const viewport = viewportRef.value;
-        if (!viewport || !(event.target instanceof Node) || viewport.contains(event.target)) return;
-        const overDialog = event.target instanceof Element && event.target.closest('dialog[open]') !== null;
-        const bounds = viewport.getBoundingClientRect();
-        const overInertViewport = viewport.closest('[inert]') !== null
-            && event.clientX >= bounds.left && event.clientX <= bounds.right
-            && event.clientY >= bounds.top && event.clientY <= bounds.bottom;
-        if (overDialog || overInertViewport) handleWheel(event);
-    }
+    });
 
     let resizeObserver: ResizeObserver | null = null;
 
     onMounted(() => {
-        window.addEventListener('wheel', handleModalWheel, { passive: false });
         resizeObserver = new ResizeObserver(([entry]) => {
             if (!entry) return;
             // contentRect excludes the viewport padding, i.e. the area the image may occupy.
@@ -145,14 +113,13 @@
 
     onBeforeUnmount(() => {
         resizeObserver?.disconnect();
-        window.removeEventListener('wheel', handleModalWheel);
         if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
     });
 
     // Keep the point at the viewport center stable when zooming without pointer anchor.
     let centerRatio: { x: number; y: number } | null = null;
-    // Stores mouse position for pointer-anchored zoom (Ctrl+wheel). Kept alive during animation.
-    let pointerAnchor: { clientX: number; clientY: number; imageX: number; imageY: number } | null = null;
+    // Stores mouse position for pointer-anchored wheel zoom. Kept alive during animation.
+    let pointerAnchor: WheelZoomAnchor | null = null;
     let previewDebounceTimer: number | null = null;
     let pendingPreviewData: {
         bitmap: ImageBitmap

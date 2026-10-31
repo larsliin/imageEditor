@@ -8,12 +8,15 @@
         busy: boolean
         isDarkMode: boolean
         rulersEnabled: boolean
+        navigationAnimationsEnabled: boolean
+        prefersReducedMotion: boolean
     }>();
 
     const emit = defineEmits<{
         rename: [fileName: string]
         'toggle-theme': []
         'toggle-rulers': []
+        'toggle-navigation-animations': []
         close: []
     }>();
 
@@ -112,6 +115,20 @@
                 <i class="bi bi-rulers" aria-hidden="true"></i>
             </BaseButton>
             <BaseButton
+                class="navigation-animation-toggle"
+                aria-label="Animated zoom and pan"
+                :aria-pressed="navigationAnimationsEnabled"
+                :title="prefersReducedMotion
+                    ? 'Animated zoom and pan are disabled by your system reduced-motion setting'
+                    : navigationAnimationsEnabled
+                        ? 'Disable animated zoom and pan for better performance'
+                        : 'Enable animated zoom and pan'"
+                :disabled="prefersReducedMotion"
+                @click="emit('toggle-navigation-animations')"
+            >
+                <i class="bi bi-wind" aria-hidden="true"></i>
+            </BaseButton>
+            <BaseButton
                 class="theme-toggle"
                 :aria-label="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
                 :title="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
@@ -169,7 +186,8 @@
 }
 
 .theme-toggle,
-.rulers-toggle {
+.rulers-toggle,
+.navigation-animation-toggle {
     display: grid;
     flex: 0 0 auto;
     place-items: center;
@@ -200,19 +218,26 @@
     border-color: var(--color-focus);
 }
 
-.rulers-toggle:disabled {
+.navigation-animation-toggle[aria-pressed='true'] {
+    color: var(--color-text);
+}
+
+.rulers-toggle:disabled,
+.navigation-animation-toggle:disabled {
     opacity: var(--opacity-button-secondary-disabled);
     cursor: default;
 }
 
 .theme-toggle:hover,
-.rulers-toggle:hover:not(:disabled) {
+.rulers-toggle:hover:not(:disabled),
+.navigation-animation-toggle:hover:not(:disabled) {
     color: var(--color-text);
     background-color: var(--color-hover);
 }
 
 .theme-toggle:focus-visible,
-.rulers-toggle:focus-visible {
+.rulers-toggle:focus-visible,
+.navigation-animation-toggle:focus-visible {
     outline: 1px solid var(--color-focus);
     outline-offset: 1px;
 }
@@ -231,7 +256,8 @@
 }
 
 .controls-group .rulers-toggle,
-.controls-group .theme-toggle {
+.controls-group .theme-toggle,
+.controls-group .navigation-animation-toggle {
     display: grid;
     place-items: center;
     margin: 0;
@@ -244,22 +270,26 @@
 }
 
 .controls-group .theme-toggle:hover:not(:disabled),
-.controls-group .rulers-toggle:hover:not(:disabled) {
+.controls-group .rulers-toggle:hover:not(:disabled),
+.controls-group .navigation-animation-toggle:hover:not(:disabled) {
     background-color: var(--color-hover);
 }
 
 .controls-group .theme-toggle:focus-visible,
-.controls-group .rulers-toggle:focus-visible {
+.controls-group .rulers-toggle:focus-visible,
+.controls-group .navigation-animation-toggle:focus-visible {
     outline: 1px solid var(--color-focus);
     outline-offset: -3px;
 }
 
-.controls-group .rulers-toggle[aria-pressed='true'] {
+.controls-group .rulers-toggle[aria-pressed='true'],
+.controls-group .navigation-animation-toggle[aria-pressed='true'] {
     background-color: var(--color-active);
 }
 
 .controls-group .rulers-toggle:disabled,
-.controls-group .theme-toggle:disabled {
+.controls-group .theme-toggle:disabled,
+.controls-group .navigation-animation-toggle:disabled {
     opacity: var(--opacity-button-secondary-disabled);
     cursor: default;
 }
@@ -272,22 +302,23 @@
     height: 32px;
     padding: 0;
     margin-right: 12px;
-    border: 1.5px solid var(--color-focus);
+    border: 1px solid transparent;
     border-radius: 4px;
-    color: var(--color-text);
-    background-color: var(--color-panel-raised);
+    color: var(--color-text-muted);
+    background-color: transparent;
     cursor: pointer;
-    font-size: 18px;
+    font-size: 16px;
     line-height: 1;
 }
 
 .close-button:hover:not(:disabled) {
-    background-color: rgba(29, 158, 117, 0.1);
+    color: var(--color-text);
+    background-color: var(--color-hover);
 }
 
 .close-button:focus-visible {
-    outline: 1px solid var(--color-focus);
-    outline-offset: 1px;
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
 }
 
 .close-button:disabled {

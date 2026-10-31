@@ -134,6 +134,8 @@ function mountTopBar(
     image: ImageInfo | null,
     busy = false,
     rulersEnabled = false,
+    navigationAnimationsEnabled = true,
+    prefersReducedMotion = false,
 ) {
     const emitted: EmittedEvent[] = [];
     const app = renderer.createApp(
@@ -143,9 +145,12 @@ function mountTopBar(
             busy,
             isDarkMode: false,
             rulersEnabled,
+            navigationAnimationsEnabled,
+            prefersReducedMotion,
             onRename: (value: string) => emitted.push({ name: 'rename', value }),
             onToggleTheme: () => emitted.push({ name: 'toggle-theme' }),
             onToggleRulers: () => emitted.push({ name: 'toggle-rulers' }),
+            onToggleNavigationAnimations: () => emitted.push({ name: 'toggle-navigation-animations' }),
         },
     );
     const root = markRaw(new TestElement('root'));
@@ -218,6 +223,37 @@ test('pixel ruler toggle exposes its state and emits a toggle event', async (t) 
     assert.equal(findElement(enabled.root, 'aria-label', 'Pixel rulers')?.props['aria-pressed'], true);
     const busy = mountTopBar(t, image, true);
     assert.equal(findElement(busy.root, 'aria-label', 'Pixel rulers')?.props.disabled, true);
+});
+
+test('animated zoom and pan toggle exposes its state, action, and reduced-motion lock', async (t) => {
+    const image: ImageInfo = { fileName: 'image.png', width: 800, height: 600, exportMimeType: 'image/png' };
+    const enabled = mountTopBar(t, image);
+    const toggle = findElement(enabled.root, 'aria-label', 'Animated zoom and pan');
+    assert.ok(toggle);
+    assert.equal(toggle.props['aria-pressed'], true);
+    assert.equal(toggle.props.title, 'Disable animated zoom and pan for better performance');
+    assert.equal(toggle.props.disabled, false);
+    const enabledIcon = findElement(toggle, 'class', 'bi bi-wind');
+    assert.ok(enabledIcon);
+    assert.equal(enabledIcon.props['aria-hidden'], 'true');
+    await invokeHandler(toggle, 'onClick', new Event('click'));
+    assert.deepEqual(enabled.emitted, [{ name: 'toggle-navigation-animations' }]);
+
+    const disabled = mountTopBar(t, image, false, false, false);
+    const disabledToggle = findElement(disabled.root, 'aria-label', 'Animated zoom and pan');
+    assert.ok(disabledToggle);
+    assert.equal(disabledToggle.props['aria-pressed'], false);
+    assert.equal(disabledToggle.props.title, 'Enable animated zoom and pan');
+    const disabledIcon = findElement(disabledToggle, 'class', 'bi bi-wind');
+    assert.ok(disabledIcon);
+    assert.equal(disabledIcon.props['aria-hidden'], 'true');
+
+    const reducedMotion = mountTopBar(t, image, false, false, false, true);
+    const reducedMotionToggle = findElement(reducedMotion.root, 'aria-label', 'Animated zoom and pan');
+    assert.ok(reducedMotionToggle);
+    assert.equal(reducedMotionToggle.props['aria-pressed'], false);
+    assert.equal(reducedMotionToggle.props.disabled, true);
+    assert.match(String(reducedMotionToggle.props.title), /reduced-motion setting/);
 });
 
 test('does not start renaming while the editor is busy', async (t) => {
