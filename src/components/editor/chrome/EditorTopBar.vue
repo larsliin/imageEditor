@@ -130,11 +130,12 @@
             </BaseButton>
             <BaseButton
                 class="theme-toggle"
-                :aria-label="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+                :aria-label="isDarkMode ? 'Dark mode' : 'Light mode'"
+                :aria-pressed="isDarkMode"
                 :title="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
                 @click="emit('toggle-theme')"
             >
-                <i :class="isDarkMode ? 'bi bi-sun' : 'bi bi-moon'" aria-hidden="true"></i>
+                <i :class="isDarkMode ? 'bi bi-moon' : 'bi bi-sun'" aria-hidden="true"></i>
             </BaseButton>
         </div>
         <BaseButton
@@ -212,16 +213,6 @@
     font-size: 0.75rem;
 }
 
-.rulers-toggle[aria-pressed='true'] {
-    color: var(--color-text);
-    background-color: var(--color-active);
-    border-color: var(--color-focus);
-}
-
-.navigation-animation-toggle[aria-pressed='true'] {
-    color: var(--color-text);
-}
-
 .rulers-toggle:disabled,
 .navigation-animation-toggle:disabled {
     opacity: var(--opacity-button-secondary-disabled);
@@ -246,7 +237,7 @@
     display: flex;
     align-items: center;
     gap: 2px;
-    padding: 6px 2px;
+    padding: 3px 4px;
     height: 32px;
     background-color: var(--color-panel-raised);
     border: 1px solid var(--color-border);
@@ -262,8 +253,8 @@
     place-items: center;
     margin: 0;
     padding: 0;
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     background-color: transparent;
     border: none;
     border-radius: 4px;
@@ -272,6 +263,7 @@
 .controls-group .theme-toggle:hover:not(:disabled),
 .controls-group .rulers-toggle:hover:not(:disabled),
 .controls-group .navigation-animation-toggle:hover:not(:disabled) {
+    color: var(--color-text);
     background-color: var(--color-hover);
 }
 
@@ -282,9 +274,17 @@
     outline-offset: -3px;
 }
 
-.controls-group .rulers-toggle[aria-pressed='true'],
-.controls-group .navigation-animation-toggle[aria-pressed='true'] {
+.controls-group .rulers-toggle[aria-pressed='true']:not(:disabled),
+.controls-group .theme-toggle[aria-pressed='true']:not(:disabled),
+.controls-group .navigation-animation-toggle[aria-pressed='true']:not(:disabled) {
+    color: var(--color-text);
     background-color: var(--color-active);
+}
+
+.controls-group .rulers-toggle:active:not(:disabled),
+.controls-group .theme-toggle:active:not(:disabled),
+.controls-group .navigation-animation-toggle:active:not(:disabled) {
+    box-shadow: inset 0 0 0 1px var(--color-border);
 }
 
 .controls-group .rulers-toggle:disabled,

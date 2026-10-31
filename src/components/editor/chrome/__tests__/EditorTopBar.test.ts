@@ -136,6 +136,7 @@ function mountTopBar(
     rulersEnabled = false,
     navigationAnimationsEnabled = true,
     prefersReducedMotion = false,
+    isDarkMode = false,
 ) {
     const emitted: EmittedEvent[] = [];
     const app = renderer.createApp(
@@ -143,7 +144,7 @@ function mountTopBar(
         {
             image,
             busy,
-            isDarkMode: false,
+            isDarkMode,
             rulersEnabled,
             navigationAnimationsEnabled,
             prefersReducedMotion,
@@ -364,8 +365,20 @@ test('emits the theme toggle event when its button is activated', async (t) => {
     const { emitted, root } = mountTopBar(t, null);
     const themeButton = findElement(root, 'class', 'theme-toggle');
     assert.ok(themeButton);
+    assert.equal(themeButton.props['aria-label'], 'Light mode');
+    assert.equal(themeButton.props['aria-pressed'], false);
+    assert.equal(themeButton.props.title, 'Switch to dark mode');
+    assert.ok(findElement(themeButton, 'class', 'bi bi-sun'));
 
     await invokeHandler(themeButton, 'onClick', new Event('click'));
 
     assert.deepEqual(emitted, [{ name: 'toggle-theme' }]);
+
+    const darkMode = mountTopBar(t, null, false, false, true, false, true);
+    const darkThemeButton = findElement(darkMode.root, 'class', 'theme-toggle');
+    assert.ok(darkThemeButton);
+    assert.equal(darkThemeButton.props['aria-label'], 'Dark mode');
+    assert.equal(darkThemeButton.props['aria-pressed'], true);
+    assert.equal(darkThemeButton.props.title, 'Switch to light mode');
+    assert.ok(findElement(darkThemeButton, 'class', 'bi bi-moon'));
 });
