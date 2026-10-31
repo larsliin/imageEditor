@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef } from 'vue';
+    import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
     import { MAX_RESIZE_DIMENSION, dimensionForPercentage, heightForWidth, isValidResize, widthForHeight } from '@/lib/resize';
     import type { Size } from '@/lib/zoom';
     import FloatingToolbar from '../chrome/FloatingToolbar.vue';
@@ -23,12 +23,10 @@
     const size = ref<InputDimensions>({ width: props.image.width, height: props.image.height });
     const percentages = ref<InputDimensions>({ width: 100, height: 100 });
     const lockRatio = shallowRef(true);
-    const widthInput = useTemplateRef<InstanceType<typeof BaseNumberInput>>('width-input');
     let previousFocus: HTMLElement | null = null;
 
     onMounted(() => {
         previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-        widthInput.value?.focus();
     });
 
     onBeforeUnmount(() => {
@@ -103,7 +101,7 @@
                 <fieldset class="resize-controls" :disabled="disabled">
                     <label class="dimension-label">
                         Width px
-                        <BaseNumberInput ref="width-input" v-model.number="size.width" class="dimension-input" aria-label="Resize width" min="1"
+                        <BaseNumberInput v-model.number="size.width" class="dimension-input" aria-label="Resize width" min="1"
                             :max="MAX_RESIZE_DIMENSION" required step="1" @input="onDimensionInput('width', 'pixels')" />
                     </label>
                     <label class="dimension-label">
