@@ -1,4 +1,4 @@
-import { computed, onScopeDispose, readonly, shallowRef, watch, type Ref } from 'vue';
+import { computed, readonly, shallowRef, watch, type Ref } from 'vue';
 import type { ToolId } from '@/types/editor';
 import { DEFAULT_BRUSH_SETTINGS, isValidBrushSettings, type BrushSettings, type BrushStroke } from '@/lib/brush';
 
@@ -32,9 +32,12 @@ function restoreSettings(): BrushSettings {
 export function useBrushTools(options: BrushOptions) {
     const settings = shallowRef<BrushSettings>(restoreSettings());
     const strokes = shallowRef<BrushStroke[]>([]);
+    const drawing = shallowRef(false);
+    const dirty = computed(() => drawing.value || strokes.value.length > 0);
     const hasPending = computed(() => strokes.value.length > 0);
 
     function clear() {
+        drawing.value = false;
         strokes.value = [];
     }
 
@@ -56,36 +59,25 @@ export function useBrushTools(options: BrushOptions) {
     }
 
     async function apply() {
-        if (options.isBusy.value || !hasPending.value) return;
-        if (await options.brushImage(strokes.value)) options.activeTool.value = null;
-    }
-
-    function cancel() {
-        if (options.isBusy.value) return;
-        options.activeTool.value = null;
-    }
-
-    function onKeydown(event: KeyboardEvent) {
-        if (event.key !== 'Escape' || event.isComposing || options.activeTool.value !== 'brush') return;
-        event.preventDefault();
-        cancel();
+        if (options.isBusy.value || drawing.value || !hasPending.value) return false;
+        return options.brushImage(strokes.value);
     }
 
     watch(options.bitmap, clear);
     watch(options.activeTool, (tool) => {
         if (tool !== 'brush') clear();
     });
-    window.addEventListener('keydown', onKeydown);
-    onScopeDispose(() => window.removeEventListener('keydown', onKeydown));
 
     return {
         settings: readonly(settings),
         strokes: readonly(strokes),
         hasPending,
+        drawing: readonly(drawing),
+        dirty,
+        setDrawing: (value: boolean) => { drawing.value = value; },
         updateSettings,
         addStroke,
         undoStroke,
         apply,
-        cancel,
     };
 }

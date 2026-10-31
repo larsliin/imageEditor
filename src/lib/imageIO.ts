@@ -80,7 +80,7 @@ export function renderToCanvas(source: ImageBitmap, background?: string): HTMLCa
     return canvas;
 }
 
-export async function rotateImageBitmap(source: ImageBitmap, turns: QuarterTurns = 1): Promise<ImageBitmap> {
+export async function rotateImageBitmap(source: ImageBitmap, turns: QuarterTurns = 1, flipH = false, flipV = false): Promise<ImageBitmap> {
     const canvas = document.createElement('canvas');
     const size = rotatedSize(source, turns);
     canvas.width = size.width;
@@ -89,7 +89,7 @@ export async function rotateImageBitmap(source: ImageBitmap, turns: QuarterTurns
     if (!context) {
         throw new Error('Canvas 2D rendering is not available in this browser.');
     }
-    drawRotatedImage(context, source, turns);
+    drawRotatedImage(context, source, turns, flipH, flipV);
     return createImageBitmap(canvas);
 }
 

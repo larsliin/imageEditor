@@ -1,4 +1,5 @@
 <script setup lang="ts">
+    import { useToolDraft } from '@/composables/useToolDraft';
     import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
     import { MAX_RESIZE_DIMENSION, dimensionForPercentage, heightForWidth, isValidResize, widthForHeight } from '@/lib/resize';
     import type { Size } from '@/lib/zoom';
@@ -14,6 +15,7 @@
 
     const emit = defineEmits<{
         apply: [size: Size]
+        dirty: [value: boolean]
         cancel: []
     }>();
 
@@ -22,6 +24,8 @@
 
     const size = ref<InputDimensions>({ width: props.image.width, height: props.image.height });
     const percentages = ref<InputDimensions>({ width: 100, height: 100 });
+    useToolDraft(() => ({ tool: 'resize', width: size.value.width, height: size.value.height }), value => emit('dirty', value));
+
     const lockRatio = shallowRef(true);
     let previousFocus: HTMLElement | null = null;
 

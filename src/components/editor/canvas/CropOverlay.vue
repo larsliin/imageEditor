@@ -1,4 +1,5 @@
 <script setup lang="ts">
+    import { useToolDraft } from '@/composables/useToolDraft';
     import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue';
     import { cropFromPoints, squareCropFromPoints, moveCrop, resizeCrop, snapCropToPixels, isValidCrop, previewToImagePoint, isCropInsideRotatedImage, isValidAngle, largestCropInsideRotatedImage, constrainCropInsideRotatedImage, type CropRect, type CropHandle, type Point } from '@/lib/crop';
     import type { Size } from '@/lib/zoom';
@@ -41,11 +42,14 @@
 
     const emit = defineEmits<{
         apply: [crop: CropRect, angle: number]
+        dirty: [value: boolean]
         cancel: []
     }>();
 
     const surface = useTemplateRef<HTMLDivElement>('surface');
     const crop = ref<CropRect>({ x: 0, y: 0, width: props.image.width, height: props.image.height });
+    useToolDraft(() => ({ tool: 'crop', rect: crop.value, angle: angle.value }), value => emit('dirty', value));
+
     const dragging = shallowRef(false);
     const moving = shallowRef(false);
     const resizing = shallowRef<CropHandle | null>(null);

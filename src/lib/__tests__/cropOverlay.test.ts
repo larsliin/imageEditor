@@ -16,6 +16,7 @@ const script = compileScript(descriptor, { id: 'crop-overlay-test' }).content
     .replace('return __returned__', '__expose(__returned__); return __returned__');
 const compiled = transpileModule(script, { compilerOptions: { module: ModuleKind.ESNext } }).outputText
     .replaceAll("'vue'", JSON.stringify(import.meta.resolve('vue')))
+    .replaceAll("'@/composables/useToolDraft'", JSON.stringify(new URL('../../composables/useToolDraft.ts', import.meta.url).href))
     .replaceAll("'@/lib/crop'", JSON.stringify(new URL('../crop.ts', import.meta.url).href));
 const { default: overlay }: { default: Component } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 const renderer = createRenderer<object, object>({

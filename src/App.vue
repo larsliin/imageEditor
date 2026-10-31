@@ -25,11 +25,14 @@
     import type { PreparedExport } from './lib/imageIO';
     import type { ColorMode } from './lib/colorMode';
     import { useBrushTools } from './composables/useBrushTools';
+    import DiscardChangesDialog from './components/editor/dialogs/DiscardChangesDialog.vue';
+    import { useToolCloseGuard } from './composables/useToolCloseGuard';
+    import { isFloatingTool } from './lib/toolDraft';
     import { hasShortcutModifier } from './lib/shortcuts';
 
     const {
         bitmap, info, documentId, status, error, isBusy, importImage, exportImage, cropImage, rotateImage,
-        resizeImage, levelsImage, curvesImage, colorModeImage, flipImage, brightnessContrastImage, brushImage,
+        resizeImage, levelsImage, curvesImage, colorModeImage, brightnessContrastImage, brushImage,
         renameImage, dismissError, closeImage,
         canUndo, canRedo, undo, redo, originalFileSize,
     } = useImageDocument();
@@ -68,7 +71,18 @@
     const activeTool = ref<ToolId | null>(null);
     const exportOpen = ref(false);
     const brush = useBrushTools({ activeTool, bitmap, isBusy, brushImage });
-    const { settings: brushSettings, strokes: brushStrokes, hasPending: hasPendingBrush } = brush;
+    const { settings: brushSettings, strokes: brushStrokes, hasPending: hasPendingBrush, drawing: brushDrawing } = brush;
+    const guard = useToolCloseGuard({ activeTool, busy: isBusy, brushDirty: brush.dirty });
+    const { pendingIntent, blocked: toolBlocked, toolName } = guard;
+    const requestClose = () => guard.request({ kind: 'close' });
+    function afterFloatingToolClose(action: () => void) {
+        if (isFloatingTool(activeTool.value)) guard.request({ kind: 'close' }, action);
+        else action();
+    }
+    function requestImport(file?: File) {
+        afterFloatingToolClose(() => { void importImage(file); });
+    }
+    function requestImageClose() { afterFloatingToolClose(closeImage); }
     const popupOpen = computed(() => exportOpen.value
         || activeTool.value === 'levels'
         || activeTool.value === 'curves'
@@ -109,9 +123,10 @@
 
     function openExport() {
         if (!bitmap.value || isBusy.value) return;
-        activeTool.value = null;
-        dismissError();
-        exportOpen.value = true;
+        guard.request({ kind: 'close' }, () => {
+            dismissError();
+            exportOpen.value = true;
+        });
     }
 
     // Pending brush strokes are undone one at a time before document history.
@@ -120,11 +135,11 @@
 
     function undoEdit() {
         if (hasPendingBrush.value) brush.undoStroke();
-        else undo();
+        else afterFloatingToolClose(undo);
     }
 
     function redoEdit() {
-        if (canRedoEdit.value) redo();
+        if (canRedoEdit.value) afterFloatingToolClose(redo);
     }
 
     async function downloadExport(prepared: PreparedExport) {
@@ -158,49 +173,30 @@
     }
 
     function selectTool(tool: ToolId) {
-        if (isBusy.value) return;
-        activeTool.value = activeTool.value === tool ? null : tool;
+        guard.request(activeTool.value === tool ? { kind: 'close' } : { kind: 'switch', tool });
     }
 
-    async function applyCrop(crop: CropRect, angle: number) {
-        if (await cropImage(crop, angle)) activeTool.value = null;
-    }
-
-    async function applyResize(size: Size) {
-        if (await resizeImage(size)) activeTool.value = null;
-    }
-
-    async function applyRotation(turns: QuarterTurns) {
-        if (await rotateImage(turns)) activeTool.value = null;
-    }
-
-    async function applyRotationWithFlips(turns: QuarterTurns, flipH: boolean, flipV: boolean) {
-        if (flipH && !(await flipImage(true))) return;
-        if (flipV && !(await flipImage(false))) return;
-        if (turns !== 0 && !(await rotateImage(turns))) return;
-        activeTool.value = null;
-    }
-
+    const applyCrop = (crop: CropRect, angle: number) => guard.apply(() => cropImage(crop, angle));
+    const applyResize = (size: Size) => guard.apply(() => resizeImage(size));
+    const applyRotationWithFlips = (turns: QuarterTurns, flipH: boolean, flipV: boolean) =>
+        guard.apply(() => rotateImage(turns, flipH, flipV));
     async function applyLevels(levels: LevelsParams) {
         if (await levelsImage(levels)) activeTool.value = null;
+    }
+    async function applyCurves(curves: CurvesParams) {
+        if (await curvesImage(curves)) activeTool.value = null;
+    }
+    async function applyColorMode(mode: ColorMode) {
+        if (await colorModeImage(mode)) activeTool.value = null;
+    }
+    async function applyBrightnessContrast(params: BrightnessContrastParams) {
+        if (await brightnessContrastImage(params)) activeTool.value = null;
     }
 
     const levelsPreview = ref<LevelsParams | null>(null);
     const curvesPreview = ref<CurvesParams | null>(null);
     const colorModePreview = ref<ColorMode | null>(null);
     const brightnessContrastPreview = ref<BrightnessContrastParams | null>(null);
-
-    async function applyBrightnessContrast(params: BrightnessContrastParams) {
-        if (await brightnessContrastImage(params)) activeTool.value = null;
-    }
-
-    async function applyCurves(curves: CurvesParams) {
-        if (await curvesImage(curves)) activeTool.value = null;
-    }
-
-    async function applyColorMode(mode: ColorMode) {
-        if (await colorModeImage(mode)) activeTool.value = null;
-    }
 
     watch(activeTool, () => {
         rotationPreview.value = 0;
@@ -213,11 +209,18 @@
     });
 
     watch(bitmap, () => {
-        activeTool.value = null;
+        if (!guard.applying.value) activeTool.value = null;
         exportOpen.value = false;
-    });
+    }, { flush: 'sync' });
 
     function handleEditorShortcut(event: KeyboardEvent) {
+        if (pendingIntent.value || event.defaultPrevented || event.isComposing) return;
+        if (event.key === 'Escape' && isFloatingTool(activeTool.value)) {
+            if (toolBlocked.value) return;
+            event.preventDefault();
+            requestClose();
+            return;
+        }
         if (!hasShortcutModifier(event) || event.altKey) return;
         const target = event.target;
         if (
@@ -251,12 +254,12 @@
     }
 
     onMounted(() => {
-        window.addEventListener('keydown', handleEditorShortcut);
+        document.addEventListener('keydown', handleEditorShortcut);
         window.addEventListener('beforeunload', warnBeforeUnloadWithBrushStrokes);
         reducedMotionQuery.addEventListener('change', onReducedMotionChange);
     });
     onBeforeUnmount(() => {
-        window.removeEventListener('keydown', handleEditorShortcut);
+        document.removeEventListener('keydown', handleEditorShortcut);
         window.removeEventListener('beforeunload', warnBeforeUnloadWithBrushStrokes);
         reducedMotionQuery.removeEventListener('change', onReducedMotionChange);
     });
@@ -267,12 +270,12 @@
 </script>
 
 <template>
-    <div class="editor">
+    <div class="editor" :inert="pendingIntent !== null">
         <EditorTopBar
             :key="documentId"
             class="editor__top-bar"
             :image="info"
-            :busy="isBusy"
+            :busy="toolBlocked"
             :is-dark-mode="isDarkMode"
             :rulers-enabled="rulersEnabled"
             :navigation-animations-enabled="navigationAnimationsEnabled"
@@ -281,20 +284,20 @@
             @toggle-theme="toggleTheme"
             @toggle-rulers="toggleRulers"
             @toggle-navigation-animations="toggleNavigationAnimations"
-            @close="closeImage"
+            @close="requestImageClose"
         />
         <EditorToolRail
             class="editor__tool-rail"
             :active-tool="activeTool"
             :has-image="bitmap !== null"
-            :busy="isBusy"
+            :busy="toolBlocked"
             :popup-open="popupOpen"
             :can-zoom-in="canZoomIn"
             :can-zoom-out="canZoomOut"
             :can-undo="canUndoEdit"
             :can-redo="canRedoEdit"
             @select-tool="selectTool"
-            @import="importImage"
+            @import="requestImport"
             @export="openExport"
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
@@ -311,7 +314,7 @@
             :pan-enabled="activeTool === 'pan'"
             :navigation-animations-enabled="navigationAnimationsEnabled"
             :crop-enabled="activeTool === 'crop'"
-            :busy="isBusy"
+            :busy="toolBlocked"
             :loading="status === 'loading'"
             :error="error"
             :levels-preview="levelsPreview"
@@ -321,13 +324,14 @@
             :rotation-preview="rotationPreview"
             :flip-h-preview="flipHPreview"
             :flip-v-preview="flipVPreview"
-            @import="importImage"
+            @import="requestImport"
             @dismiss-error="dismissError"
             @viewport-resize="viewportSize = $event"
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
             @crop="(crop, angle) => applyCrop(crop, angle)"
-            @cancel-crop="activeTool = null"
+            @cancel-crop="requestClose"
+            @crop-dirty="guard.reportDirty"
         >
             <template #overlay>
                 <ZoomControls
@@ -347,7 +351,9 @@
             v-if="activeTool === 'brush' && bitmap"
             :image="bitmap"
             :settings="brushSettings"
+            :disabled="toolBlocked || pendingIntent !== null"
             :strokes="brushStrokes"
+            @drawing="brush.setDrawing"
             @stroke="brush.addStroke"
         />
         <div
@@ -360,14 +366,15 @@
             :bitmap="bitmap"
             :image="info"
             :original-size="originalFileSize"
-            :busy="isBusy"
+            :busy="toolBlocked"
             :error="error"
             @download="downloadExport"
             @cancel="exportOpen = false"
         />
         <RotateControls
+            @dirty="guard.reportDirty"
             v-if="activeTool === 'rotate' && bitmap"
-            :disabled="isBusy"
+            :disabled="toolBlocked"
             :error="error"
             @preview="(turns, flipH, flipV) => {
                 rotationPreview = turns;
@@ -375,15 +382,16 @@
                 flipVPreview = flipV;
             }"
             @apply="applyRotationWithFlips"
-            @cancel="activeTool = null"
+            @cancel="requestClose"
         />
         <ResizeControls
+            @dirty="guard.reportDirty"
             v-if="activeTool === 'resize' && imageSize"
             :image="imageSize"
-            :disabled="isBusy"
+            :disabled="toolBlocked"
             :error="error"
             @apply="applyResize"
-            @cancel="activeTool = null"
+            @cancel="requestClose"
         />
         <LevelsControls
             v-if="activeTool === 'levels' && bitmap"
@@ -420,15 +428,21 @@
             @apply="applyBrightnessContrast"
             @cancel="activeTool = null"
         />
+        <DiscardChangesDialog
+            v-if="pendingIntent"
+            :tool-name="toolName"
+            @keep="guard.keepEditing"
+            @discard="guard.discardChanges"
+        />
         <BrushControls
             v-if="activeTool === 'brush' && bitmap"
             :settings="brushSettings"
-            :disabled="isBusy"
-            :can-apply="hasPendingBrush"
+            :disabled="toolBlocked"
+            :can-apply="hasPendingBrush && !brushDrawing"
             :error="error"
             @update:settings="brush.updateSettings"
-            @apply="brush.apply"
-            @cancel="brush.cancel"
+            @apply="guard.apply(brush.apply)"
+            @cancel="requestClose"
         />
     </div>
 </template>

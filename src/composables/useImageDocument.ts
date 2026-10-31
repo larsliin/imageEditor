@@ -231,11 +231,11 @@ export function useImageDocument() {
         }
     }
 
-    async function rotateImage(turns: QuarterTurns = 1): Promise<boolean> {
+    async function rotateImage(turns: QuarterTurns = 1, flipH = false, flipV = false): Promise<boolean> {
         const doc = current.value;
         if (!doc || isBusy.value) return false;
-        if (turns === 0) return true;
-        return applyBitmapEdit(doc, rotateImageBitmap(doc.bitmap, turns), 'The image could not be rotated.');
+        if (turns === 0 && !flipH && !flipV) return true;
+        return applyBitmapEdit(doc, rotateImageBitmap(doc.bitmap, turns, flipH, flipV), 'The image could not be rotated.');
     }
 
     async function resizeImage(size: Size): Promise<boolean> {

@@ -38,11 +38,13 @@ function setup(t: TestContext) {
     const files = [{ name: 'landscape.png', type: 'image/png', width: 80, height: 40, size: 1000 }];
     const downloads: Blob[] = [];
     const rotationAngles: number[] = [];
+    const scales: number[][] = [];
     const context = {
         save() {},
         restore() {},
         drawImage() {},
         translate() {},
+        scale(x: number, y: number) { scales.push([x, y]); },
         rotate(angle: number) { rotationAngles.push(angle); },
         getImageData: () => ({ data: new Uint8ClampedArray(4) }),
         putImageData() {},
@@ -102,7 +104,7 @@ function setup(t: TestContext) {
         }
     });
     return {
-        editor, scope, bitmaps, files, rotationAngles, downloads,
+        editor, scope, bitmaps, files, rotationAngles, scales, downloads,
         fail: () => { failProcessing = true; },
     };
 }
@@ -328,4 +330,29 @@ test('rejects stale exports and mismatched formats without downloading or markin
     assert.equal(await editor.exportImage({ bitmap: editor.bitmap.value!, blob, mimeType: 'image/jpeg' }), false);
     assert.equal(downloads.length, 0);
     assert.equal(editor.isDirty.value, true);
+});
+
+test('combined rotation and flips commit once and undo together', async (t) => {
+    const { editor, bitmaps, scales } = setup(t);
+    await editor.importImage();
+    const original = editor.bitmap.value;
+    assert.equal(await editor.rotateImage(1, true, true), true);
+    assert.deepEqual(scales, [[-1, -1]]);
+    assert.equal(bitmaps.length, 2, 'one output bitmap, no intermediate applied flips');
+    assert.equal(editor.bitmap.value?.width, 40);
+    assert.equal(editor.bitmap.value?.height, 80);
+    editor.undo();
+    assert.equal(editor.bitmap.value, original);
+    assert.equal(editor.canUndo.value, false);
+});
+
+test('failed combined rotation and flips leave the document and history untouched', async (t) => {
+    const { editor, bitmaps, fail } = setup(t);
+    await editor.importImage();
+    const original = editor.bitmap.value;
+    fail();
+    assert.equal(await editor.rotateImage(1, true, false), false);
+    assert.equal(editor.bitmap.value, original);
+    assert.equal(editor.canUndo.value, false);
+    assert.equal(bitmaps.length, 1);
 });

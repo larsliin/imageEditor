@@ -1,4 +1,5 @@
 <script setup lang="ts">
+    import { useToolDraft } from '@/composables/useToolDraft';
     import { nextTick, onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue';
     import type { QuarterTurns } from '@/lib/rotate';
     import FloatingToolbar from '../chrome/FloatingToolbar.vue';
@@ -12,12 +13,15 @@
     const emit = defineEmits<{
         preview: [turns: QuarterTurns, flipH: boolean, flipV: boolean]
         apply: [turns: QuarterTurns, flipH: boolean, flipV: boolean]
+        dirty: [value: boolean]
         cancel: []
     }>();
 
     const turns = shallowRef<QuarterTurns>(0);
     const flipH = shallowRef(false);
     const flipV = shallowRef(false);
+    useToolDraft(() => ({ tool: 'rotate', turns: turns.value, flipH: flipH.value, flipV: flipV.value }), value => emit('dirty', value));
+
     const clockwise = useTemplateRef<InstanceType<typeof BaseButton>>('clockwise');
     let previousFocus: HTMLElement | null = null;
 

@@ -39,15 +39,20 @@ const handler = script.statements.find((statement) =>
 );
 assert.ok(handler);
 const compiled = transpileModule(`
+    import { isFloatingTool } from ${JSON.stringify(new URL('../toolDraft.ts', import.meta.url).href)};
     import { hasShortcutModifier } from ${JSON.stringify(new URL('../shortcuts.ts', import.meta.url).href)};
     export function createHandler(state) {
-        const { canZoomIn, canZoomOut, popupOpen, canUndoEdit, zoomIn, zoomOut, undoEdit, redoEdit } = state;
+        const { canZoomIn, canZoomOut, popupOpen, canUndoEdit, zoomIn, zoomOut, undoEdit, redoEdit, pendingIntent, toolBlocked, activeTool, requestClose } = state;
         ${handler.getText(script)}
         return handleEditorShortcut;
     }
 `, { compilerOptions: { module: ModuleKind.ESNext } }).outputText;
 
 interface ShortcutState {
+    pendingIntent: { value: object | null }
+    toolBlocked: { value: boolean }
+    activeTool: { value: string | null }
+    requestClose: () => void
     canZoomIn: { value: boolean }
     canZoomOut: { value: boolean }
     popupOpen: { value: boolean }
@@ -81,6 +86,8 @@ for (const platform of ['MacIntel', 'Win32', 'Linux x86_64']) {
         }
         const actions: string[] = [];
         const state: ShortcutState = {
+            pendingIntent: { value: null }, toolBlocked: { value: false }, activeTool: { value: null },
+            requestClose: () => { actions.push('close'); },
             canZoomIn: { value: true }, canZoomOut: { value: true },
             popupOpen: { value: false }, canUndoEdit: { value: true },
             zoomIn: () => { actions.push('in'); }, zoomOut: () => { actions.push('out'); },
@@ -125,5 +132,24 @@ for (const platform of ['MacIntel', 'Win32', 'Linux x86_64']) {
         state.canUndoEdit.value = false;
         key('z');
         assert.deepEqual(actions, [], 'zoom limits and undo availability still guard actions');
+        state.pendingIntent.value = { kind: 'close' };
+        for (const name of ['+', '-', 'z', 'y', 'Escape']) key(name);
+        assert.deepEqual(actions, [], 'confirmation blocks every editor shortcut');
+        state.pendingIntent.value = null;
+        state.activeTool.value = 'brush';
+        key('Escape', { ctrlKey: false, metaKey: false });
+        assert.deepEqual(actions.splice(0), ['close']);
+        state.toolBlocked.value = true;
+        key('Escape', { ctrlKey: false, metaKey: false });
+        assert.deepEqual(actions, [], 'processing blocks floating-tool dismissal');
+        state.toolBlocked.value = false;
+        state.activeTool.value = 'curves';
+        key('Escape', { ctrlKey: false, metaKey: false });
+        assert.deepEqual(actions, [], 'popup Escape remains owned by ToolModal');
     });
 }
+
+test('App shortcuts listen at document level before window-level keyboard interception and clean up', () => {
+    assert.match(source, /document\.addEventListener\('keydown', handleEditorShortcut\)/);
+    assert.match(source, /document\.removeEventListener\('keydown', handleEditorShortcut\)/);
+});

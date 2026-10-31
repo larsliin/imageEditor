@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
+    import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
     import { displaySize, type Size } from '@/lib/zoom';
     import { usePan } from '@/composables/usePan';
     import { useCanvasWheelZoom, type WheelZoomAnchor } from '@/composables/useCanvasWheelZoom';
@@ -11,7 +11,6 @@
     import { applyColorModeToPixels, type ColorMode } from '@/lib/colorMode';
     import { applyBrightnessContrastToPixels, type BrightnessContrastParams } from '@/lib/brightnessContrast';
     import { drawRotatedImage, rotatedSize, type QuarterTurns } from '@/lib/rotate';
-    import { drawFlippedImage } from '@/lib/imageIO';
 
     const props = defineProps<{
         bitmap: ImageBitmap | null
@@ -37,6 +36,7 @@
         'dismiss-error': []
         'viewport-resize': [size: Size]
         crop: [crop: CropRect, angle: number]
+        'crop-dirty': [value: boolean]
         'cancel-crop': []
         'zoom-in': []
         'zoom-out': []
@@ -144,19 +144,9 @@
         const context = canvas.getContext('2d', { willReadFrequently: true });
         if (!context) return;
         context.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw image with flips and rotation applied
-        context.save();
-        context.translate(size.width / 2, size.height / 2);
-        context.rotate(rotation * Math.PI / 2);
-        
-        // Apply flips within the rotated coordinate system
-        if (flipH) context.scale(-1, 1);
-        if (flipV) context.scale(1, -1);
-        
-        context.drawImage(bitmap, -bitmap.width / 2, -bitmap.height / 2);
-        context.restore();
-        
+
+        drawRotatedImage(context, bitmap, rotation, flipH, flipV);
+
         if (!levels && !curves && !colorMode && !brightnessContrast) return;
         const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
         if (levels) applyLevelsToPixels(imageData.data, levels);
@@ -212,15 +202,22 @@
     );
 
     watch(
-        [() => props.bitmap, canvasRef, () => props.levelsPreview, () => props.curvesPreview, () => props.colorModePreview, () => props.brightnessContrastPreview, () => props.rotationPreview, () => props.flipHPreview, () => props.flipVPreview],
+        [
+            () => props.bitmap, canvasRef, () => props.levelsPreview, () => props.curvesPreview,
+            () => props.colorModePreview, () => props.brightnessContrastPreview,
+            () => props.rotationPreview, () => props.flipHPreview, () => props.flipVPreview,
+        ],
         ([bitmap, canvas, levels, curves, colorMode, brightnessContrast, rotation, flipH, flipV]) => {
             if (!bitmap || !canvas) return;
             const newSize = rotatedSize(bitmap, rotation ?? 0);
             const dimensionsChanged = canvas.width !== newSize.width || canvas.height !== newSize.height;
-            
-            pendingPreviewData = { bitmap, canvas, levels, curves, colorMode, brightnessContrast, rotation: rotation ?? 0, flipH: flipH ?? false, flipV: flipV ?? false };
+
+            pendingPreviewData = {
+                bitmap, canvas, levels, curves, colorMode, brightnessContrast,
+                rotation: rotation ?? 0, flipH: flipH ?? false, flipV: flipV ?? false,
+            };
             if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
-            
+
             // Apply immediately for dimension changes to prevent stretching, but debounce color adjustments
             if (dimensionsChanged) {
                 applyPreview();
@@ -287,6 +284,7 @@
                     :pan-mode="isPanMode"
                     @apply="(crop, angle) => emit('crop', crop, angle)"
                     @cancel="emit('cancel-crop')"
+                    @dirty="emit('crop-dirty', $event)"
                 />
             </div>
             <div v-else class="empty-state">

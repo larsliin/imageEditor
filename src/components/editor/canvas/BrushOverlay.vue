@@ -3,6 +3,7 @@
     import { drawBrushStroke, type BrushPoint, type BrushSettings, type BrushStroke } from '@/lib/brush';
 
     const props = defineProps<{
+        disabled?: boolean
         image: ImageBitmap
         settings: BrushSettings
         strokes: readonly BrushStroke[]
@@ -10,6 +11,7 @@
 
     const emit = defineEmits<{
         stroke: [stroke: BrushStroke]
+        drawing: [value: boolean]
     }>();
 
     interface DraftStroke extends Omit<BrushStroke, 'points'> {
@@ -129,13 +131,14 @@
     }
 
     function startStroke(event: PointerEvent) {
-        if (!event.isPrimary || event.button !== 0 || activeStroke) return;
+        if (props.disabled || !event.isPrimary || event.button !== 0 || activeStroke) return;
         const mapped = imagePoint(event);
         const element = canvas.value;
         if (!mapped || !element) return;
         event.preventDefault();
         element.setPointerCapture(event.pointerId);
         activeStroke = { ...props.settings, points: [mapped.point] };
+        emit('drawing', true);
         lastPointer = mapped.point;
         pointSpacing = MIN_POINT_SPACING * props.image.width / mapped.bounds.width;
         setAxisLock(event.shiftKey);
@@ -146,6 +149,7 @@
     }
 
     function moveStroke(event: PointerEvent) {
+        if (props.disabled) return;
         updateCursor(event);
         if (!activeStroke) return;
         const mapped = imagePoint(event);
@@ -166,6 +170,7 @@
         if (!activeStroke) return;
         const stroke = activeStroke;
         activeStroke = null;
+        emit('drawing', false);
         // The parent appends the stroke synchronously, and the committed layer is drawn before paint.
         emit('stroke', stroke);
         drawActive();
@@ -195,6 +200,7 @@
     });
 
     onBeforeUnmount(() => {
+        emit('drawing', false);
         resizeObserver?.disconnect();
         cancelAnimationFrame(frame);
         window.removeEventListener('blur', finishStroke);
@@ -210,7 +216,7 @@
 
 <template>
     <Teleport defer to=".image-surface">
-        <div class="brush-overlay" :class="{ 'is-magnified': magnified }">
+        <div class="brush-overlay" :inert="disabled" :class="{ 'is-magnified': magnified }">
             <canvas ref="committed" class="brush-overlay__canvas" aria-hidden="true"></canvas>
             <canvas
                 ref="canvas"
