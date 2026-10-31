@@ -160,4 +160,79 @@ test('animated zoom: targetZoom used for next step calculation', async () => {
     scope.stop();
 });
 
+test('animated zoom: disabled navigation animations apply zoom, Fit, and Actual size immediately', () => {
+    const scope = effectScope();
+    const imageSize = shallowRef({ width: 800, height: 400 });
+    const viewportSize = shallowRef({ width: 1000, height: 700 });
+    const sourceId = shallowRef(1);
+    const zoomState = scope.run(() => useAnimatedZoom(imageSize, viewportSize, sourceId, {
+        animationsEnabled: false,
+    }));
+    assert.ok(zoomState);
 
+    zoomState.zoomIn();
+    assert.equal(zoomState.zoom.value, 2);
+    assert.equal(zoomState.targetZoom.value, zoomState.zoom.value);
+    assert.equal(zoomState.isAnimating.value, false);
+
+    zoomState.setZoom(2);
+    zoomState.fitToView();
+    assert.equal(zoomState.zoom.value, 1.25);
+    assert.equal(zoomState.isFit.value, true);
+
+    zoomState.actualSize();
+    assert.equal(zoomState.zoom.value, 1);
+    assert.equal(zoomState.isAnimating.value, false);
+    scope.stop();
+});
+
+type TestAnimationFrame = (timestamp: number) => void;
+
+test('animated zoom: disabling during an animation completes at its requested target', (t) => {
+    const pendingFrames = new Map<number, TestAnimationFrame>();
+    let nextFrameId = 0;
+    const requestFrameDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'requestAnimationFrame');
+    const cancelFrameDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'cancelAnimationFrame');
+    Object.defineProperty(globalThis, 'requestAnimationFrame', {
+        configurable: true,
+        value: (callback: TestAnimationFrame) => {
+            const id = ++nextFrameId;
+            pendingFrames.set(id, callback);
+            return id;
+        },
+    });
+    Object.defineProperty(globalThis, 'cancelAnimationFrame', {
+        configurable: true,
+        value: (id: number) => { pendingFrames.delete(id); },
+    });
+
+    const animationsEnabled = shallowRef(true);
+    const scope = effectScope();
+    const zoomState = scope.run(() => useAnimatedZoom(
+        shallowRef({ width: 800, height: 400 }),
+        shallowRef({ width: 1000, height: 700 }),
+        shallowRef(1),
+        { animationsEnabled },
+    ));
+    assert.ok(zoomState);
+
+    t.after(() => {
+        scope.stop();
+        if (requestFrameDescriptor) Object.defineProperty(globalThis, 'requestAnimationFrame', requestFrameDescriptor);
+        else Reflect.deleteProperty(globalThis, 'requestAnimationFrame');
+        if (cancelFrameDescriptor) Object.defineProperty(globalThis, 'cancelAnimationFrame', cancelFrameDescriptor);
+        else Reflect.deleteProperty(globalThis, 'cancelAnimationFrame');
+    });
+
+    zoomState.zoomIn();
+    const requestedTarget = zoomState.targetZoom.value;
+    assert.equal(zoomState.isAnimating.value, true);
+    assert.equal(pendingFrames.size, 1);
+
+    animationsEnabled.value = false;
+
+    assert.equal(zoomState.isAnimating.value, false);
+    assert.equal(zoomState.zoom.value, requestedTarget);
+    assert.equal(zoomState.targetZoom.value, requestedTarget);
+    assert.equal(pendingFrames.size, 0);
+});

@@ -49,10 +49,11 @@ function setup(t: TestContext, reducedMotion = false) {
     t.mock.method(performance, 'now', () => now);
     const enabled = shallowRef(true);
     const available = shallowRef(true);
+    const animationsEnabled = shallowRef(true);
     // Only scroll, event, and pointer-capture APIs are needed from the DOM.
     const container = shallowRef<HTMLElement | null>(viewport as HTMLElement);
     const scope = effectScope();
-    const pan = scope.run(() => usePan(container, { enabled, available }))!;
+    const pan = scope.run(() => usePan(container, { enabled, available, animationsEnabled }))!;
     t.after(() => {
         scope.stop();
         assert.equal(frames.size, 0, 'disposing the scope cancels animation');
@@ -100,7 +101,7 @@ function setup(t: TestContext, reducedMotion = false) {
 
     return {
         viewport, pointer, key, step, frames, captures, pan, throwPreview, focusOptions,
-        browserWindow, browserDocument, enabled, available, scope,
+        browserWindow, browserDocument, enabled, available, animationsEnabled, scope,
     };
 }
 
@@ -216,6 +217,26 @@ test('reduced motion disables momentum but preserves drag panning', (t) => {
     const { throwPreview, viewport, frames } = setup(t, true);
     throwPreview();
     assert.equal(viewport.scrollLeft, 540);
+    assert.equal(frames.size, 0);
+});
+
+test('disabling pan animation stops momentum and preserves direct drag panning', (t) => {
+    const { animationsEnabled, pointer, step, throwPreview, viewport, frames } = setup(t);
+    throwPreview();
+    assert.equal(frames.size, 1);
+
+    step();
+    const stoppedAtX = viewport.scrollLeft ?? 0;
+    const stoppedAtY = viewport.scrollTop ?? 0;
+    animationsEnabled.value = false;
+    assert.equal(viewport.scrollLeft, stoppedAtX);
+    assert.equal(frames.size, 0);
+
+    pointer('pointerdown', 200, 200, 100);
+    pointer('pointermove', 180, 190, 120);
+    pointer('pointerup', 180, 190, 120);
+    assert.equal(viewport.scrollLeft, stoppedAtX + 20);
+    assert.equal(viewport.scrollTop, stoppedAtY + 10);
     assert.equal(frames.size, 0);
 });
 

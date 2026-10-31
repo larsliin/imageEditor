@@ -29,7 +29,11 @@ function isControl(target: EventTarget | null): boolean {
  */
 export function usePan(
     container: Readonly<Ref<HTMLElement | null>>,
-    options: { enabled: MaybeRefOrGetter<boolean>; available: MaybeRefOrGetter<boolean> },
+    options: {
+        enabled: MaybeRefOrGetter<boolean>
+        available: MaybeRefOrGetter<boolean>
+        animationsEnabled?: MaybeRefOrGetter<boolean>
+    },
 ) {
     const isSpaceHeld = ref(false);
     const isDragging = ref(false);
@@ -60,6 +64,7 @@ export function usePan(
         const first = samples[0];
         const last = samples.at(-1);
         if (!first || !last || event.timeStamp - last.time > 80
+            || !toValue(options.animationsEnabled ?? true)
             || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
         const elapsed = event.timeStamp - first.time;
@@ -190,6 +195,14 @@ export function usePan(
         () => {
             stopMomentum();
             cancelDrag();
+        },
+        { flush: 'sync' },
+    );
+
+    watch(
+        () => toValue(options.animationsEnabled ?? true),
+        (enabled) => {
+            if (!enabled) stopMomentum();
         },
         { flush: 'sync' },
     );

@@ -1,4 +1,4 @@
-import { computed, ref, watch, type Ref } from 'vue';
+import { computed, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue';
 import {
     canZoomIn as canZoomInFrom,
     canZoomOut as canZoomOutFrom,
@@ -24,6 +24,11 @@ interface ZoomAnimation {
     duration: number
 }
 
+interface UseAnimatedZoomOptions {
+    animationDuration?: number
+    animationsEnabled?: MaybeRefOrGetter<boolean>
+}
+
 /**
  * Provides smooth animated zoom with:
  * - 200–250 ms animation duration
@@ -39,8 +44,10 @@ export function useAnimatedZoom(
     imageSize: Ref<Size | null>,
     viewportSize: Ref<Size>,
     sourceId: Ref<number>,
-    animationDuration: number = 225, // milliseconds
+    options: number | UseAnimatedZoomOptions = 225,
 ) {
+    const animationDuration = typeof options === 'number' ? options : options.animationDuration ?? 225;
+    const animationsEnabled = typeof options === 'number' ? true : options.animationsEnabled ?? true;
     const fitMode = ref(true);
     const capInitialFit = ref(true);
     const manualZoom = ref(1);
@@ -58,7 +65,7 @@ export function useAnimatedZoom(
     // Animated zoom: blends between start and target during animation
     const animatedZoom = computed(() => {
         // Read the animation tick to ensure re-evaluation on each frame
-        animationTick.value; // eslint-disable-line no-unused-expressions
+        animationTick.value;
 
         const animation = animationState.value;
         if (!animation) return null;
@@ -105,6 +112,19 @@ export function useAnimatedZoom(
         }
     }
 
+    function finishAnimation() {
+        const animation = animationState.value;
+        if (!animation) return;
+        if (animationFrameId.value !== null) {
+            cancelAnimationFrame(animationFrameId.value);
+            animationFrameId.value = null;
+        }
+        manualZoom.value = animation.targetZoom;
+        fitMode.value = false;
+        animationState.value = null;
+        animationTick.value = 0;
+    }
+
     function startAnimation(targetZoom: number) {
         const startZoom = zoom.value;
 
@@ -112,7 +132,7 @@ export function useAnimatedZoom(
         cancelAnimation();
 
         // No animation needed if already at target
-        if (Math.abs(startZoom - targetZoom) < 1e-6) {
+        if (Math.abs(startZoom - targetZoom) < 1e-6 || !toValue(animationsEnabled)) {
             manualZoom.value = targetZoom;
             fitMode.value = false;
             return;
@@ -134,11 +154,7 @@ export function useAnimatedZoom(
 
             if (elapsed >= animation.duration) {
                 // Animation complete
-                manualZoom.value = animation.targetZoom;
-                fitMode.value = false;
-                animationState.value = null;
-                animationFrameId.value = null;
-                animationTick.value = 0;
+                finishAnimation();
             } else {
                 // Trigger computed re-evaluation and continue animation
                 animationTick.value += 1;
@@ -192,6 +208,14 @@ export function useAnimatedZoom(
             }
         }
     }
+
+    watch(
+        () => toValue(animationsEnabled),
+        (enabled) => {
+            if (!enabled) finishAnimation();
+        },
+        { flush: 'sync' },
+    );
 
     watch([imageSize, sourceId], ([nextSize, nextSourceId], [previousSize, previousSourceId]) => {
         if (nextSourceId !== previousSourceId || !nextSize || !previousSize) {
