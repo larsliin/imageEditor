@@ -40,6 +40,11 @@ unpacked Chrome extension to open the editor from the browser toolbar.
   tool changes. Holding Space through mouse release (including keyboard
   auto-repeat) or releasing Space does not cancel the throw.
   Reduced-motion preferences disable the throw effect.
+  Zoom with Command (⌘)+wheel on macOS or Ctrl+wheel on Windows/Linux, and use
+  the same modifier with `+`/`-`. Undo uses ⌘+Z on macOS or Ctrl+Z on Windows/Linux;
+  redo uses the same modifier with Y or Shift+Z. Keyboard shortcuts leave
+  editable fields alone; zoom remains available with popups open, while history
+  shortcuts do not change the image behind a popup.
 - **Resize** opens a draggable toolbar with synchronized width and height fields in both
   pixels and percentages, visible together. Editing either unit updates the other.
   Fields appear in one row with the aspect-ratio lock beside the Apply and Cancel
@@ -103,10 +108,15 @@ unpacked Chrome extension to open the editor from the browser toolbar.
   toolbar buttons are disabled and dimmed until you apply/download or cancel.
   Popups and floating toolbars share the same drop shadow, with no backdrop
   dimming or image filter. Only the area immediately around a panel is shaded by its
-  shadow. The canvas is not interactive. Header controls (filename, pixel rulers, and theme) remain
-  available. Crop, Resize, and Rotate keep their floating-toolbar workflow.
+  shadow. The canvas is not interactive. Header controls (filename, pixel rulers,
+  animated zoom and pan, and theme) remain available. Crop, Resize, and Rotate
+  keep their floating-toolbar workflow.
 - **Switch between dark and light themes** with the theme button. The choice is
   saved locally in the browser.
+- **Toggle animated zoom and pan** with the wind icon in the header.
+  Animations are enabled by default unless the system requests reduced motion.
+  The preference is saved locally, while the system reduced-motion setting
+  always disables animations and restores the saved choice when it is turned off.
 - **Export** from the download icon opens an export dialog with JPEG,
   PNG, and WebP formats. JPEG and WebP offer **Very High (92%)**, **High (80%)**,
   **Medium (60%)**, and **Low (40%)** encoder quality presets; these are not
